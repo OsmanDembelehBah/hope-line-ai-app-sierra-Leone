@@ -1,0 +1,8 @@
+<svg width="200" height="60" viewBox="0 0 200 60" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect x="8" y="14" width="24" height="32" rx="4" stroke="currentColor" stroke-width="2" fill="none"/>
+  <path d="M20 24C20 22 22 20 24 22C26 20 28 22 28 24C28 28 20 32 20 32C20 32 12 28 12 24C12 22 14 20 16 22C18 20 20 22 20 24Z" fill="currentColor" opacity="0.6"/>
+  <path d="M36 22C36 22 38 24 38 26C38 28 36 30 36 30" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.4"/>
+  <path d="M40 18C40 18 44 22 44 26C44 30 40 34 40 34" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+  <text x="52" y="35" font-family="system-ui" font-size="20" font-weight="700" fill="currentColor">HopeLine AI</text>
+  <text x="52" y="48" font-family="system-ui" font-size="8" font-weight="400" fill="currentColor" opacity="0.6">CRISIS SUPPORT</text>
+</svg>

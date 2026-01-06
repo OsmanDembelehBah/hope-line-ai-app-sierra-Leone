@@ -1,0 +1,342 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* Purple & Black brand theme for HopeLine AI */
+  --background: #0a0a0a;
+  --foreground: #fafafa;
+  --card: #1a1a1a;
+  --card-foreground: #fafafa;
+  --popover: #1a1a1a;
+  --popover-foreground: #fafafa;
+  --primary: #9333ea;
+  --primary-foreground: #fafafa;
+  --secondary: #7c3aed;
+  --secondary-foreground: #fafafa;
+  --muted: #262626;
+  --muted-foreground: #a3a3a3;
+  --accent: #a855f7;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #2a2a2a;
+  --input: #1f1f1f;
+  --ring: #9333ea;
+  --radius: 0.75rem;
+  --sidebar: oklch(0.98 0.01 280);
+  --sidebar-foreground: oklch(0.15 0.02 280);
+  --sidebar-primary: oklch(0.55 0.2 270);
+  --sidebar-primary-foreground: oklch(0.98 0.01 280);
+  --sidebar-accent: oklch(0.6 0.18 260);
+  --sidebar-accent-foreground: oklch(0.98 0.01 280);
+  --sidebar-border: oklch(0.9 0.02 280);
+  --sidebar-ring: oklch(0.55 0.2 270);
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
+  --card: oklch(0.15 0.01 280);
+  --card-foreground: oklch(0.95 0.02 280);
+  --popover: oklch(0.15 0.01 280);
+  --popover-foreground: oklch(0.95 0.02 280);
+  --primary: oklch(0.65 0.2 270);
+  --primary-foreground: oklch(0.12 0.01 280);
+  --secondary: oklch(0.5 0.15 280);
+  --secondary-foreground: oklch(0.95 0.02 280);
+  --muted: oklch(0.3 0.02 280);
+  --muted-foreground: oklch(0.7 0.05 280);
+  --accent: oklch(0.7 0.18 260);
+  --accent-foreground: oklch(0.12 0.01 280);
+  --destructive: oklch(0.55 0.2 25);
+  --destructive-foreground: oklch(0.95 0.02 280);
+  --border: oklch(0.25 0.02 280);
+  --input: oklch(0.2 0.01 280);
+  --ring: oklch(0.65 0.2 270);
+  --chart-1: oklch(0.65 0.2 270);
+  --chart-2: oklch(0.55 0.15 280);
+  --chart-3: oklch(0.65 0.18 320);
+  --chart-4: oklch(0.6 0.12 40);
+  --chart-5: oklch(0.65 0.1 180);
+  --sidebar: oklch(0.12 0.01 280);
+  --sidebar-foreground: oklch(0.95 0.02 280);
+  --sidebar-primary: oklch(0.65 0.2 270);
+  --sidebar-primary-foreground: oklch(0.12 0.01 280);
+  --sidebar-accent: oklch(0.7 0.18 260);
+  --sidebar-accent-foreground: oklch(0.12 0.01 280);
+  --sidebar-border: oklch(0.25 0.02 280);
+  --sidebar-ring: oklch(0.65 0.2 270);
+}
+
+@theme inline {
+  --font-sans: "Geist", "Geist Fallback";
+  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Smooth transitions */
+@layer components {
+  /* Added smooth transitions and purple glow effects */
+  .btn-primary-glow {
+    @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold transition-all duration-300;
+    @apply hover:scale-105 hover:shadow-[0_0_30px_rgba(147,51,234,0.5)];
+  }
+
+  .card-glow {
+    @apply bg-card border border-border rounded-xl p-6 transition-all duration-300;
+    @apply hover:border-primary hover:shadow-[0_0_20px_rgba(147,51,234,0.3)];
+  }
+
+  .gradient-purple {
+    @apply bg-gradient-to-br from-primary via-secondary to-accent;
+  }
+
+  .animate-fade-in-up {
+    animation: fadeInUp 0.8s ease-out forwards;
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .transition-smooth {
+    @apply transition-all duration-200 ease-in-out;
+  }
+
+  /* Calm gradient backgrounds */
+  .gradient-calm {
+    @apply bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10;
+  }
+
+  .gradient-emergency {
+    @apply bg-gradient-to-br from-destructive/10 via-destructive/5 to-background;
+  }
+
+  /* Adding animation utilities for landing page */
+  .animate-fade-in {
+    animation: fadeIn 1s ease-out forwards;
+  }
+
+  .animate-slide-up {
+    animation: slideUp 0.8s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-slide-down {
+    animation: slideDown 0.6s ease-out forwards;
+    opacity: 0;
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradientShift 8s ease infinite;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes gradientShift {
+    0% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0% 50%;
+    }
+  }
+
+  /* Enhanced animations for Awwwards-level experience */
+  /* Premium smooth scrolling */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  /* Cinematic video overlay */
+  .video-overlay {
+    @apply absolute inset-0 bg-gradient-to-br from-primary/40 via-background/60 to-secondary/40;
+  }
+
+  /* Removed .heading-editorial class that was causing Tailwind parsing errors */
+  /* Use standard Tailwind classes directly in components instead */
+
+  /* Backdrop blur utilities */
+  .backdrop-glass {
+    @apply backdrop-blur-xl bg-background/80 border border-border/50;
+  }
+
+  /* Premium shadows */
+  .shadow-premium {
+    box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Smooth gradient animations */
+  @keyframes gradientFlow {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient-flow {
+    background-size: 200% 200%;
+    animation: gradientFlow 15s ease infinite;
+  }
+
+  /* Enhanced Awwwards-level animations */
+
+  /* Radial gradient utility */
+  .bg-radial-gradient {
+    background: radial-gradient(circle, var(--tw-gradient-stops));
+  }
+
+  /* Premium glass effect */
+  .glass-premium {
+    @apply backdrop-blur-2xl bg-white/10 dark:bg-black/10 border border-white/20 shadow-2xl;
+  }
+
+  /* Adding Awwwards-level premium styles */
+
+  /* Hide scrollbar for horizontal scroll sections */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Removed .bg-neutral-soft and .shadow-premium-card classes that use arbitrary values in @apply - not compatible with Tailwind v4 */
+  /* Apply these styles directly in components instead */
+
+  /* Smooth gradient flow animation */
+  @keyframes gradientFlow {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient-flow {
+    background-size: 200% 200%;
+    animation: gradientFlow 20s ease infinite;
+  }
+
+  /* Adding floating AI assistant animations */
+  @keyframes pulse-glow {
+    0%,
+    100% {
+      box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(147, 51, 234, 0.6);
+    }
+  }
+
+  .animate-pulse-glow {
+    animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  @keyframes typing-cursor {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .animate-typing-cursor {
+    animation: typing-cursor 1s ease-in-out infinite;
+  }
+}
