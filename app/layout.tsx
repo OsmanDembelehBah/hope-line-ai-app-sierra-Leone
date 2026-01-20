@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "your-google-verification-code", // Replace with actual code from Google Search Console
+    google: "pXs0Th6s_5E5JJGXniQa4GxWKucH1FG_vV",
   },
     generator: 'v0.app'
 }
