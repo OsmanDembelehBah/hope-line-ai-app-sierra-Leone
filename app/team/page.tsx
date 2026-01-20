@@ -35,31 +35,10 @@ const teamMembers: TeamMember[] = [
   },
   {
     id: 4,
-    name: "Co-Founder",
-    role: "Co-Founder & Clinical Advisor",
-    bio: "Bringing expertise in mental health policy and community outreach to ensure HopeLine serves those who need it most.",
-    image: "/mental-health-professional-headshot.jpg",
-  },
-  {
-    id: 5,
-    name: "Managing Director",
-    role: "Managing Director & Operations Lead",
-    bio: "Overseeing operations and strategic partnerships to scale HopeLine's impact across Sierra Leone.",
-    image: "/executive-professional-headshot.jpg",
-  },
-  {
-    id: 6,
-    name: "Team Member (Name)",
-    role: "Program Director",
-    bio: "Leading program development and community engagement initiatives.",
-    image: "/program-manager-headshot.jpg",
-  },
-  {
-    id: 7,
-    name: "Team Member (Name)",
-    role: "Technology Lead",
-    bio: "Building scalable infrastructure to support our crisis support platform.",
-    image: "/tech-engineer-headshot.jpg",
+    name: "Saidunatu J.M.R. Kanu",
+    role: "Communications & Media Coordinator",
+    bio: "Saidunatu J.M.R. Kanu manages communications and media outreach at HopeLine, helping to spread mental health awareness and connect with communities across Sierra Leone. Her dedication to storytelling and advocacy amplifies HopeLine's mission to reach those who need support.",
+    image: "/images/saidunatu-kanu.jpg",
   },
 ]
 
