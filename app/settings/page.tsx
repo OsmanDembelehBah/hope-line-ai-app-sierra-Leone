@@ -3,10 +3,10 @@
 import { useState, useEffect } from "react"
 import { NavBar } from "@/components/nav-bar"
 import { Footer } from "@/components/footer"
-import { Sun, Type, Volume2, Globe } from "lucide-react"
+import { Sun, Moon, Type, Volume2, Globe } from "lucide-react"
 
 export default function SettingsPage() {
-  const [darkMode, setDarkMode] = useState(false)
+  const [theme, setTheme] = useState<"light" | "dark">("dark")
   const [fontSize, setFontSize] = useState("base")
   const [language, setLanguage] = useState("english")
   const [soundEnabled, setSoundEnabled] = useState(true)
@@ -14,26 +14,34 @@ export default function SettingsPage() {
 
   useEffect(() => {
     // Load preferences
-    const savedDarkMode = localStorage.getItem("hopeline-darkMode") === "true"
+    const savedTheme = (localStorage.getItem("hopeline-theme") as "light" | "dark") || "dark"
     const savedFontSize = localStorage.getItem("hopeline-fontSize") || "base"
     const savedLanguage = localStorage.getItem("hopeline-language") || "english"
     const savedSound = localStorage.getItem("hopeline-sound") !== "false"
     const savedContrast = localStorage.getItem("hopeline-contrast") === "true"
 
-    setDarkMode(savedDarkMode)
+    setTheme(savedTheme)
     setFontSize(savedFontSize)
     setLanguage(savedLanguage)
     setSoundEnabled(savedSound)
     setHighContrast(savedContrast)
+
+    // Apply theme to document
+    if (savedTheme === "light") {
+      document.documentElement.classList.remove("dark")
+    } else {
+      document.documentElement.classList.add("dark")
+    }
   }, [])
 
-  const handleDarkModeToggle = (value: boolean) => {
-    setDarkMode(value)
-    localStorage.setItem("hopeline-darkMode", String(value))
-    if (value) {
-      document.documentElement.classList.add("dark")
-    } else {
+  const handleThemeChange = (newTheme: "light" | "dark") => {
+    setTheme(newTheme)
+    localStorage.setItem("hopeline-theme", newTheme)
+
+    if (newTheme === "light") {
       document.documentElement.classList.remove("dark")
+    } else {
+      document.documentElement.classList.add("dark")
     }
   }
 
@@ -85,20 +93,35 @@ export default function SettingsPage() {
           </h2>
 
           <div className="space-y-4">
-            {/* Dark Mode */}
-            <div className="flex items-center justify-between p-4 bg-muted/50 rounded-lg">
-              <div>
-                <p className="font-semibold text-foreground">Dark Mode</p>
-                <p className="text-xs text-muted-foreground">Easier on the eyes at night</p>
+            <div className="p-4 bg-muted/50 rounded-lg">
+              <div className="mb-3">
+                <p className="font-semibold text-foreground">Theme</p>
+                <p className="text-xs text-muted-foreground">Choose your preferred color scheme</p>
               </div>
-              <button
-                onClick={() => handleDarkModeToggle(!darkMode)}
-                className={`px-4 py-2 rounded-lg font-semibold transition-all ${
-                  darkMode ? "bg-primary text-primary-foreground" : "bg-muted text-foreground"
-                }`}
-              >
-                {darkMode ? "On" : "Off"}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => handleThemeChange("light")}
+                  className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                    theme === "light"
+                      ? "bg-white text-gray-900 border-2 border-purple-600 shadow-lg"
+                      : "bg-muted text-foreground hover:bg-muted/80 border border-border"
+                  }`}
+                >
+                  <Sun className="w-5 h-5" />
+                  Light
+                </button>
+                <button
+                  onClick={() => handleThemeChange("dark")}
+                  className={`flex-1 px-6 py-3 rounded-lg font-semibold transition-all flex items-center justify-center gap-2 ${
+                    theme === "dark"
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "bg-muted text-foreground hover:bg-muted/80 border border-border"
+                  }`}
+                >
+                  <Moon className="w-5 h-5" />
+                  Dark
+                </button>
+              </div>
             </div>
 
             {/* High Contrast */}

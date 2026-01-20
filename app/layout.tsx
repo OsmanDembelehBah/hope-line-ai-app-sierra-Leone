@@ -1,7 +1,7 @@
 import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
-import FloatingAIAssistant from "@/components/floating-ai-assistant"
+import { FloatingAssistantWrapper } from "./floating-assistant-wrapper"
 
 export const metadata: Metadata = {
   title: "HopeLine AI — Sierra Leone | Crisis Support & Recovery",
@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     description: "Anonymous emotional support and crisis help",
     type: "website",
   },
-    generator: 'v0.app'
+  generator: "v0.app",
 }
 
 export default function RootLayout({
@@ -29,7 +29,7 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         {children}
-        <FloatingAIAssistant />
+        <FloatingAssistantWrapper />
       </body>
     </html>
   )

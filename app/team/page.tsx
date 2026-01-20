@@ -4,6 +4,7 @@ import { NavBar } from "@/components/nav-bar"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Mail, Linkedin } from "lucide-react"
+import { motion } from "framer-motion"
 
 interface TeamMember {
   id: number
@@ -23,40 +24,66 @@ const teamMembers: TeamMember[] = [
   },
   {
     id: 2,
+    name: "Mohamed Mansary",
+    role: "Co-Founder & Technical Lead",
+    bio: "Mohamed Mansary is a passionate developer and co-founder of HopeLine, driving technical innovation and platform development. His dedication to creating impactful solutions helps make mental health support accessible to communities across Sierra Leone.",
+    image: "/images/mohamed-mansary.jpg",
+  },
+  {
+    id: 3,
+    name: "Kumba Blessing Fatoma",
+    role: "Community Outreach Coordinator",
+    bio: "Kumba Blessing Fatoma leads community engagement and outreach initiatives at HopeLine, connecting with vulnerable populations across Sierra Leone. Her compassionate approach and dedication to mental health awareness helps bridge the gap between technology and the communities we serve.",
+    image: "/images/kumba-blessing-fatoma.jpg",
+  },
+  {
+    id: 4,
     name: "Co-Founder",
     role: "Co-Founder & Clinical Advisor",
     bio: "Bringing expertise in mental health policy and community outreach to ensure HopeLine serves those who need it most.",
     image: "/mental-health-professional-headshot.jpg",
   },
   {
-    id: 3,
+    id: 5,
     name: "Managing Director",
     role: "Managing Director & Operations Lead",
     bio: "Overseeing operations and strategic partnerships to scale HopeLine's impact across Sierra Leone.",
     image: "/executive-professional-headshot.jpg",
   },
   {
-    id: 4,
+    id: 6,
     name: "Team Member (Name)",
     role: "Program Director",
     bio: "Leading program development and community engagement initiatives.",
     image: "/program-manager-headshot.jpg",
   },
   {
-    id: 5,
+    id: 7,
     name: "Team Member (Name)",
     role: "Technology Lead",
     bio: "Building scalable infrastructure to support our crisis support platform.",
     image: "/tech-engineer-headshot.jpg",
   },
-  {
-    id: 6,
-    name: "Team Member (Name)",
-    role: "Community Outreach Coordinator",
-    bio: "Connecting HopeLine with communities, NGOs, and local organizations.",
-    image: "/community-coordinator-headshot.jpg",
-  },
 ]
+
+const containerVariants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.15,
+    },
+  },
+}
+
+const itemVariants = {
+  hidden: { opacity: 0, y: 30 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.6, ease: "easeOut" },
+  },
+}
 
 export default function TeamPage() {
   return (
@@ -67,7 +94,12 @@ export default function TeamPage() {
         <Header title="Our Team" subtitle="Dedicated to providing compassionate mental health support" />
 
         {/* Mission Statement */}
-        <section className="mt-8 mb-12">
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          className="mt-8 mb-12"
+        >
           <div className="gradient-calm rounded-2xl p-6">
             <h2 className="text-2xl font-bold text-primary mb-3">Meet Our Leadership</h2>
             <p className="text-foreground leading-relaxed">
@@ -76,10 +108,16 @@ export default function TeamPage() {
               that HopeLine remains trauma-informed, culturally sensitive, and technologically robust.
             </p>
           </div>
-        </section>
+        </motion.section>
 
         {/* CEO Spotlight Section - Larger Featured Card */}
-        <section className="mt-12 mb-16">
+        <motion.section
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.8 }}
+          className="mt-12 mb-16"
+        >
           <div className="flex justify-center">
             <div className="w-full max-w-2xl bg-gradient-to-br from-purple-900/20 to-indigo-900/20 rounded-3xl overflow-hidden border-2 border-purple-500/30 hover:border-purple-500/60 hover:shadow-[0_0_40px_rgba(147,51,234,0.4)] transition-all duration-500 transform hover:scale-[1.02]">
               {/* CEO Image */}
@@ -96,7 +134,7 @@ export default function TeamPage() {
               {/* CEO Info */}
               <div className="p-8 space-y-4">
                 <div className="inline-block bg-purple-600/20 backdrop-blur-xl border border-purple-500/30 px-4 py-2 rounded-full mb-2">
-                  <span className="text-sm font-bold text-purple-300">👑 Leadership</span>
+                  <span className="text-sm font-bold text-purple-300">Leadership</span>
                 </div>
 
                 <h2 className="text-4xl font-bold text-foreground mb-2">{teamMembers[0].name}</h2>
@@ -125,23 +163,40 @@ export default function TeamPage() {
               </div>
             </div>
           </div>
-        </section>
+        </motion.section>
 
-        {/* Other Team Members Grid */}
-        <section className="mt-12">
+        {/* Other Team Members Grid with Animations */}
+        <motion.section
+          variants={containerVariants}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          className="mt-12"
+        >
           <h3 className="text-2xl font-bold text-center mb-8 text-foreground">Our Team</h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {teamMembers.slice(1).map((member) => (
-              <div
+              <motion.div
                 key={member.id}
-                className="bg-card rounded-2xl overflow-hidden border border-border hover:shadow-lg hover:border-purple-500/30 transition-all duration-300"
+                variants={itemVariants}
+                className="bg-card rounded-2xl overflow-hidden border border-border hover:shadow-lg hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02]"
               >
-                {/* Image Placeholder */}
-                <div className="relative w-full h-64 bg-gradient-to-b from-primary/20 to-secondary/20 flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="text-6xl mb-2">👤</div>
-                    <p className="text-xs text-muted-foreground">Image placeholder</p>
-                  </div>
+                {/* Image */}
+                <div className="relative w-full h-64 bg-gradient-to-b from-primary/20 to-secondary/20">
+                  {member.image && member.image !== "/placeholder.svg" ? (
+                    <img
+                      src={member.image || "/placeholder.svg"}
+                      alt={member.name}
+                      className="w-full h-full object-cover object-center"
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full">
+                      <div className="text-center">
+                        <div className="text-6xl mb-2">👤</div>
+                        <p className="text-xs text-muted-foreground">Image placeholder</p>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Member Info */}
@@ -168,20 +223,26 @@ export default function TeamPage() {
                     </button>
                   </div>
                 </div>
-              </div>
+              </motion.div>
             ))}
           </div>
-        </section>
+        </motion.section>
 
-        {/* Limkokwing Attribution */}
-        <section className="mt-12 bg-card rounded-2xl p-8 border border-border text-center">
+        {/* Limkokwing Attribution - Updated */}
+        <motion.section
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="mt-12 bg-card rounded-2xl p-8 border border-border text-center"
+        >
           <h3 className="text-lg font-bold text-primary mb-2">University Partnership</h3>
           <p className="text-foreground mb-2">HopeLine AI is developed in partnership with and supported by</p>
           <p className="text-xl font-bold text-primary">Limkokwing University Sierra Leone</p>
           <p className="text-sm text-muted-foreground mt-2">
             Empowering innovation in technology and social impact through education and collaboration.
           </p>
-        </section>
+        </motion.section>
       </main>
 
       <Footer />

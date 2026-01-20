@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import { NavBar } from "@/components/nav-bar"
 import { Footer } from "@/components/footer"
-import { Play, Pause } from "lucide-react"
+import { Play, Pause, Volume2, VolumeX } from "lucide-react"
 
 interface MeditationSession {
   id: string
@@ -73,18 +73,201 @@ const SESSIONS: MeditationSession[] = [
 ]
 
 const NATURE_SOUNDS = [
-  { id: "rain", name: "Gentle Rain", duration: "∞", icon: "🌧️" },
-  { id: "forest", name: "Forest Ambience", duration: "∞", icon: "🌲" },
-  { id: "ocean", name: "Ocean Waves", duration: "∞", icon: "🌊" },
-  { id: "birds", name: "Bird Chirping", duration: "∞", icon: "🐦" },
-  { id: "wind", name: "Wind Breeze", duration: "∞", icon: "💨" },
-  { id: "fire", name: "Crackling Fire", duration: "∞", icon: "🔥" },
+  {
+    id: "rain",
+    name: "Gentle Rain",
+    duration: "∞",
+    icon: "🌧️",
+    frequency: 200,
+    type: "pink" as const,
+  },
+  {
+    id: "forest",
+    name: "Forest Ambience",
+    duration: "∞",
+    icon: "🌲",
+    frequency: 150,
+    type: "brown" as const,
+  },
+  {
+    id: "ocean",
+    name: "Ocean Waves",
+    duration: "∞",
+    icon: "🌊",
+    frequency: 100,
+    type: "pink" as const,
+  },
+  {
+    id: "stream",
+    name: "Gentle Stream",
+    duration: "∞",
+    icon: "💧",
+    frequency: 300,
+    type: "white" as const,
+  },
+  {
+    id: "meditation",
+    name: "Meditation Bell",
+    duration: "∞",
+    icon: "🔔",
+    frequency: 432,
+    type: "sine" as const,
+  },
+  {
+    id: "calm",
+    name: "Calm Waters",
+    duration: "∞",
+    icon: "🌊",
+    frequency: 174,
+    type: "sine" as const,
+  },
 ]
 
 export default function RelaxationPage() {
   const [selectedSession, setSelectedSession] = useState<string | null>(null)
   const [isPlaying, setIsPlaying] = useState(false)
   const [selectedSound, setSelectedSound] = useState<string | null>(null)
+  const [isSoundPlaying, setIsSoundPlaying] = useState(false)
+
+  const audioContextRef = useRef<AudioContext | null>(null)
+  const oscillatorRef = useRef<OscillatorNode | null>(null)
+  const gainNodeRef = useRef<GainNode | null>(null)
+  const noiseNodeRef = useRef<AudioBufferSourceNode | null>(null)
+
+  // Cleanup audio on unmount
+  useEffect(() => {
+    return () => {
+      stopSound()
+    }
+  }, [])
+
+  // Generate white/pink/brown noise for nature sounds
+  const createNoiseBuffer = (type: "white" | "pink" | "brown") => {
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+    }
+
+    const audioContext = audioContextRef.current
+    const bufferSize = 2 * audioContext.sampleRate
+    const buffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate)
+    const output = buffer.getChannelData(0)
+
+    if (type === "white") {
+      // White noise - equal energy across all frequencies
+      for (let i = 0; i < bufferSize; i++) {
+        output[i] = Math.random() * 2 - 1
+      }
+    } else if (type === "pink") {
+      // Pink noise - more natural, like rain/ocean
+      let b0 = 0,
+        b1 = 0,
+        b2 = 0,
+        b3 = 0,
+        b4 = 0,
+        b5 = 0,
+        b6 = 0
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1
+        b0 = 0.99886 * b0 + white * 0.0555179
+        b1 = 0.99332 * b1 + white * 0.0750759
+        b2 = 0.969 * b2 + white * 0.153852
+        b3 = 0.8665 * b3 + white * 0.3104856
+        b4 = 0.55 * b4 + white * 0.5329522
+        b5 = -0.7616 * b5 - white * 0.016898
+        output[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362
+        output[i] *= 0.11
+        b6 = white * 0.115926
+      }
+    } else if (type === "brown") {
+      // Brown noise - deeper, like forest ambience
+      let lastOut = 0
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1
+        output[i] = (lastOut + 0.02 * white) / 1.02
+        lastOut = output[i]
+        output[i] *= 3.5
+      }
+    }
+
+    return buffer
+  }
+
+  // Stop current sound playback
+  const stopSound = () => {
+    if (oscillatorRef.current) {
+      try {
+        oscillatorRef.current.stop()
+      } catch (e) {
+        // Already stopped
+      }
+      oscillatorRef.current = null
+    }
+    if (noiseNodeRef.current) {
+      try {
+        noiseNodeRef.current.stop()
+      } catch (e) {
+        // Already stopped
+      }
+      noiseNodeRef.current = null
+    }
+  }
+
+  // Start playing the selected sound
+  const startSound = (soundId: string) => {
+    stopSound()
+
+    const sound = NATURE_SOUNDS.find((s) => s.id === soundId)
+    if (!sound) return
+
+    if (!audioContextRef.current) {
+      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)()
+    }
+
+    const audioContext = audioContextRef.current
+    const gainNode = audioContext.createGain()
+    gainNode.gain.setValueAtTime(0.05, audioContext.currentTime) // Low volume
+
+    if (sound.type === "sine") {
+      // For meditation bells - use oscillator
+      const oscillator = audioContext.createOscillator()
+      oscillator.type = "sine"
+      oscillator.frequency.setValueAtTime(sound.frequency, audioContext.currentTime)
+      oscillator.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      oscillator.start()
+      oscillatorRef.current = oscillator
+    } else {
+      // For nature sounds - use noise
+      const buffer = createNoiseBuffer(sound.type)
+      const source = audioContext.createBufferSource()
+      source.buffer = buffer
+      source.loop = true
+      source.connect(gainNode)
+      gainNode.connect(audioContext.destination)
+      source.start()
+      noiseNodeRef.current = source
+    }
+
+    gainNodeRef.current = gainNode
+  }
+
+  // Handle sound playback when selection changes
+  useEffect(() => {
+    if (selectedSound && isSoundPlaying) {
+      startSound(selectedSound)
+    } else {
+      stopSound()
+    }
+  }, [selectedSound, isSoundPlaying])
+
+  const toggleSound = (soundId: string) => {
+    if (selectedSound === soundId) {
+      setIsSoundPlaying(!isSoundPlaying)
+    } else {
+      setSelectedSound(soundId)
+      setIsSoundPlaying(true)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-background md:ml-64 pb-20 md:pb-8">
@@ -169,20 +352,33 @@ export default function RelaxationPage() {
         <div className="mb-8">
           <h2 className="text-xl font-bold text-foreground mb-4">Ambient Nature Sounds</h2>
           <p className="text-muted-foreground text-sm mb-4">
-            Play calming background sounds to create a peaceful environment for work, rest, or reflection.
+            Play calming background sounds to create a peaceful environment. Click any sound to start playing.
           </p>
           <div className="grid md:grid-cols-3 gap-4">
             {NATURE_SOUNDS.map((sound) => (
               <button
                 key={sound.id}
-                onClick={() => setSelectedSound(selectedSound === sound.id ? null : sound.id)}
+                onClick={() => toggleSound(sound.id)}
                 className={`p-4 rounded-lg border-2 transition-all ${
-                  selectedSound === sound.id ? "border-primary bg-primary/10" : "border-border hover:border-primary"
+                  selectedSound === sound.id && isSoundPlaying
+                    ? "border-primary bg-primary/10 shadow-lg shadow-primary/20"
+                    : "border-border hover:border-primary"
                 }`}
               >
-                <div className="text-3xl mb-2">{sound.icon}</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-3xl">{sound.icon}</div>
+                  {selectedSound === sound.id && (
+                    <div
+                      className={`p-1 rounded-full ${isSoundPlaying ? "bg-primary text-primary-foreground" : "bg-muted"}`}
+                    >
+                      {isSoundPlaying ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                    </div>
+                  )}
+                </div>
                 <p className="font-semibold text-foreground text-sm">{sound.name}</p>
-                <p className="text-xs text-muted-foreground">Infinite loop</p>
+                <p className="text-xs text-muted-foreground">
+                  {selectedSound === sound.id && isSoundPlaying ? "Playing..." : "Click to play"}
+                </p>
               </button>
             ))}
           </div>

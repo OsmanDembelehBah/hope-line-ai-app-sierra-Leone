@@ -4,9 +4,44 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Purple & Black brand theme for HopeLine AI */
-  --background: #0a0a0a;
-  --foreground: #fafafa;
+  --background: #ffffff;
+  --foreground: #0a0a0a;
+  --card: #ffffff;
+  --card-foreground: #0a0a0a;
+  --popover: #ffffff;
+  --popover-foreground: #0a0a0a;
+  --primary: #9333ea;
+  --primary-foreground: #fafafa;
+  --secondary: #7c3aed;
+  --secondary-foreground: #fafafa;
+  --muted: #f5f5f5;
+  --muted-foreground: #525252;
+  --accent: #a855f7;
+  --accent-foreground: #fafafa;
+  --destructive: #ef4444;
+  --destructive-foreground: #fafafa;
+  --border: #e5e5e5;
+  --input: #f5f5f5;
+  --ring: #9333ea;
+  --radius: 0.75rem;
+  --sidebar: #fafafa;
+  --sidebar-foreground: #0a0a0a;
+  --sidebar-primary: #9333ea;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #a855f7;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #e5e5e5;
+  --sidebar-ring: #9333ea;
+  --chart-1: #9333ea;
+  --chart-2: #7c3aed;
+  --chart-3: #a855f7;
+  --chart-4: #c084fc;
+  --chart-5: #e879f9;
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #ffffff;
   --card: #1a1a1a;
   --card-foreground: #fafafa;
   --popover: #1a1a1a;
@@ -24,55 +59,25 @@
   --border: #2a2a2a;
   --input: #1f1f1f;
   --ring: #9333ea;
-  --radius: 0.75rem;
-  --sidebar: oklch(0.98 0.01 280);
-  --sidebar-foreground: oklch(0.15 0.02 280);
-  --sidebar-primary: oklch(0.55 0.2 270);
-  --sidebar-primary-foreground: oklch(0.98 0.01 280);
-  --sidebar-accent: oklch(0.6 0.18 260);
-  --sidebar-accent-foreground: oklch(0.98 0.01 280);
-  --sidebar-border: oklch(0.9 0.02 280);
-  --sidebar-ring: oklch(0.55 0.2 270);
+  --sidebar: #0a0a0a;
+  --sidebar-foreground: #fafafa;
+  --sidebar-primary: #9333ea;
+  --sidebar-primary-foreground: #fafafa;
+  --sidebar-accent: #a855f7;
+  --sidebar-accent-foreground: #fafafa;
+  --sidebar-border: #2a2a2a;
+  --sidebar-ring: #9333ea;
+  --chart-1: #a855f7;
+  --chart-2: #9333ea;
+  --chart-3: #7c3aed;
+  --chart-4: #c084fc;
+  --chart-5: #e879f9;
 }
 
-.dark {
-  --background: #000000;
-  --foreground: #ffffff;
-  --card: oklch(0.15 0.01 280);
-  --card-foreground: oklch(0.95 0.02 280);
-  --popover: oklch(0.15 0.01 280);
-  --popover-foreground: oklch(0.95 0.02 280);
-  --primary: oklch(0.65 0.2 270);
-  --primary-foreground: oklch(0.12 0.01 280);
-  --secondary: oklch(0.5 0.15 280);
-  --secondary-foreground: oklch(0.95 0.02 280);
-  --muted: oklch(0.3 0.02 280);
-  --muted-foreground: oklch(0.7 0.05 280);
-  --accent: oklch(0.7 0.18 260);
-  --accent-foreground: oklch(0.12 0.01 280);
-  --destructive: oklch(0.55 0.2 25);
-  --destructive-foreground: oklch(0.95 0.02 280);
-  --border: oklch(0.25 0.02 280);
-  --input: oklch(0.2 0.01 280);
-  --ring: oklch(0.65 0.2 270);
-  --chart-1: oklch(0.65 0.2 270);
-  --chart-2: oklch(0.55 0.15 280);
-  --chart-3: oklch(0.65 0.18 320);
-  --chart-4: oklch(0.6 0.12 40);
-  --chart-5: oklch(0.65 0.1 180);
-  --sidebar: oklch(0.12 0.01 280);
-  --sidebar-foreground: oklch(0.95 0.02 280);
-  --sidebar-primary: oklch(0.65 0.2 270);
-  --sidebar-primary-foreground: oklch(0.12 0.01 280);
-  --sidebar-accent: oklch(0.7 0.18 260);
-  --sidebar-accent-foreground: oklch(0.12 0.01 280);
-  --sidebar-border: oklch(0.25 0.02 280);
-  --sidebar-ring: oklch(0.65 0.2 270);
-}
-
+/* Simplified @theme inline to avoid custom property errors */
 @theme inline {
-  --font-sans: "Geist", "Geist Fallback";
-  --font-mono: "Geist Mono", "Geist Mono Fallback";
+  --font-sans: "Geist", "Geist Fallback", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -97,10 +102,10 @@
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+  --radius-sm: 0.5rem;
+  --radius-md: 0.625rem;
+  --radius-lg: 0.75rem;
+  --radius-xl: 1rem;
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -113,76 +118,76 @@
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    border-color: var(--border);
   }
   body {
-    @apply bg-background text-foreground;
+    background-color: var(--background);
+    color: var(--foreground);
   }
 }
 
-/* Smooth transitions */
 @layer components {
-  /* Added smooth transitions and purple glow effects */
-  .btn-primary-glow {
-    @apply bg-primary text-primary-foreground px-6 py-3 rounded-lg font-semibold transition-all duration-300;
-    @apply hover:scale-105 hover:shadow-[0_0_30px_rgba(147,51,234,0.5)];
+  html {
+    scroll-behavior: smooth;
   }
 
-  .card-glow {
-    @apply bg-card border border-border rounded-xl p-6 transition-all duration-300;
-    @apply hover:border-primary hover:shadow-[0_0_20px_rgba(147,51,234,0.3)];
+  /* Fast scroll-triggered animations */
+  .scroll-animate {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
   }
 
-  .gradient-purple {
-    @apply bg-gradient-to-br from-primary via-secondary to-accent;
+  .scroll-animate.visible {
+    opacity: 1;
+    transform: translateY(0);
   }
 
-  .animate-fade-in-up {
-    animation: fadeInUp 0.8s ease-out forwards;
+  .scroll-animate-left {
+    opacity: 0;
+    transform: translateX(-30px);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
   }
 
-  @keyframes fadeInUp {
-    from {
-      opacity: 0;
-      transform: translateY(30px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  .scroll-animate-left.visible {
+    opacity: 1;
+    transform: translateX(0);
   }
 
-  .transition-smooth {
-    @apply transition-all duration-200 ease-in-out;
+  .scroll-animate-right {
+    opacity: 0;
+    transform: translateX(30px);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
   }
 
-  /* Calm gradient backgrounds */
-  .gradient-calm {
-    @apply bg-gradient-to-br from-primary/10 via-secondary/5 to-accent/10;
+  .scroll-animate-right.visible {
+    opacity: 1;
+    transform: translateX(0);
   }
 
-  .gradient-emergency {
-    @apply bg-gradient-to-br from-destructive/10 via-destructive/5 to-background;
+  .scroll-animate-scale {
+    opacity: 0;
+    transform: scale(0.95);
+    transition: opacity 0.3s ease-out, transform 0.3s ease-out;
   }
 
-  /* Adding animation utilities for landing page */
+  .scroll-animate-scale.visible {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  /* Stagger delays for grid items */
+  .stagger-1 { transition-delay: 0.05s; }
+  .stagger-2 { transition-delay: 0.1s; }
+  .stagger-3 { transition-delay: 0.15s; }
+  .stagger-4 { transition-delay: 0.2s; }
+
   .animate-fade-in {
-    animation: fadeIn 1s ease-out forwards;
+    animation: fadeIn 0.3s ease-out forwards;
   }
 
   .animate-slide-up {
-    animation: slideUp 0.8s ease-out forwards;
-    opacity: 0;
-  }
-
-  .animate-slide-down {
-    animation: slideDown 0.6s ease-out forwards;
-    opacity: 0;
-  }
-
-  .animate-gradient {
-    background-size: 200% 200%;
-    animation: gradientShift 8s ease infinite;
+    animation: slideUp 0.3s ease-out forwards;
   }
 
   @keyframes fadeIn {
@@ -197,7 +202,7 @@
   @keyframes slideUp {
     from {
       opacity: 0;
-      transform: translateY(30px);
+      transform: translateY(20px);
     }
     to {
       opacity: 1;
@@ -205,113 +210,41 @@
     }
   }
 
-  @keyframes slideDown {
-    from {
-      opacity: 0;
-      transform: translateY(-20px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+  .gradient-purple {
+    background: linear-gradient(135deg, #9333ea, #7c3aed, #a855f7);
   }
 
-  @keyframes gradientShift {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
+  .gradient-calm {
+    background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(124, 58, 237, 0.05), rgba(168, 85, 247, 0.1));
   }
 
-  /* Enhanced animations for Awwwards-level experience */
-  /* Premium smooth scrolling */
-  html {
-    scroll-behavior: smooth;
+  .btn-primary-glow {
+    background-color: #9333ea;
+    color: #fafafa;
+    padding: 0.75rem 1.5rem;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
   }
 
-  /* Cinematic video overlay */
-  .video-overlay {
-    @apply absolute inset-0 bg-gradient-to-br from-primary/40 via-background/60 to-secondary/40;
+  .btn-primary-glow:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 30px rgba(147, 51, 234, 0.5);
   }
 
-  /* Removed .heading-editorial class that was causing Tailwind parsing errors */
-  /* Use standard Tailwind classes directly in components instead */
-
-  /* Backdrop blur utilities */
-  .backdrop-glass {
-    @apply backdrop-blur-xl bg-background/80 border border-border/50;
+  .card-glow {
+    background-color: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    transition: all 0.3s ease;
   }
 
-  /* Premium shadows */
-  .shadow-premium {
-    box-shadow: 0 20px 60px -10px rgba(0, 0, 0, 0.3);
+  .card-glow:hover {
+    border-color: #9333ea;
+    box-shadow: 0 0 20px rgba(147, 51, 234, 0.3);
   }
 
-  /* Smooth gradient animations */
-  @keyframes gradientFlow {
-    0%,
-    100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-  }
-
-  .animate-gradient-flow {
-    background-size: 200% 200%;
-    animation: gradientFlow 15s ease infinite;
-  }
-
-  /* Enhanced Awwwards-level animations */
-
-  /* Radial gradient utility */
-  .bg-radial-gradient {
-    background: radial-gradient(circle, var(--tw-gradient-stops));
-  }
-
-  /* Premium glass effect */
-  .glass-premium {
-    @apply backdrop-blur-2xl bg-white/10 dark:bg-black/10 border border-white/20 shadow-2xl;
-  }
-
-  /* Adding Awwwards-level premium styles */
-
-  /* Hide scrollbar for horizontal scroll sections */
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-
-  /* Removed .bg-neutral-soft and .shadow-premium-card classes that use arbitrary values in @apply - not compatible with Tailwind v4 */
-  /* Apply these styles directly in components instead */
-
-  /* Smooth gradient flow animation */
-  @keyframes gradientFlow {
-    0%,
-    100% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-  }
-
-  .animate-gradient-flow {
-    background-size: 200% 200%;
-    animation: gradientFlow 20s ease infinite;
-  }
-
-  /* Adding floating AI assistant animations */
   @keyframes pulse-glow {
     0%,
     100% {
@@ -338,5 +271,14 @@
 
   .animate-typing-cursor {
     animation: typing-cursor 1s ease-in-out infinite;
+  }
+
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
   }
 }

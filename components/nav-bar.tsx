@@ -31,7 +31,8 @@ const SECONDARY_NAV_ITEMS = [
   { href: "/relax", label: "Relax", icon: Heart },
   { href: "/challenges", label: "Challenges", icon: Users },
   { href: "/community", label: "Stories", icon: Users },
-  { href: "/rainbo", label: "Rainbo", icon: Phone },
+  { href: "/news", label: "News", icon: BookOpen },
+  { href: "/contact", label: "Contact", icon: Phone },
   { href: "/settings", label: "Settings", icon: Settings },
 ]
 

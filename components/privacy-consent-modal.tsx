@@ -55,7 +55,7 @@ export function PrivacyConsentModal({ onAccept }: { onAccept: () => void }) {
               <li>We do not store chat messages by default</li>
               <li>We do not collect or sell your data</li>
               <li>We do not replace professional medical care</li>
-              <li>If the issues you are facing are increasing please Visit Medical personal<li/>
+              <li>If the issues you are facing are increasing please visit medical personnel</li>
             </ul>
           </div>
 

@@ -144,7 +144,7 @@ export default function RainboPage() {
               Main Office Location
             </h3>
             <p className="text-sm text-muted-foreground mb-2">Freetown, Sierra Leone</p>
-            <p className="text-xs text-muted-foreground">(PLACEHOLDER - Replace with verified address)</p>
+            <p className="text-xs text-muted-foreground">Freetown sierra Leone</p>
           </div>
           <div className="bg-card rounded-lg p-6 border border-border">
             <h3 className="font-bold text-foreground mb-3 flex items-center gap-2">

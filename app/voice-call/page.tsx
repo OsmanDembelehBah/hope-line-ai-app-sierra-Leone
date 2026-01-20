@@ -10,18 +10,31 @@ export default function VoiceCallPage() {
   const [transcript, setTranscript] = useState("")
   const [aiResponse, setAiResponse] = useState("")
   const [isAISpeaking, setIsAISpeaking] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [isBrowserSupported, setIsBrowserSupported] = useState(true)
   const recognitionRef = useRef<any>(null)
   const synthRef = useRef<SpeechSynthesis | null>(null)
 
   useEffect(() => {
     synthRef.current = window.speechSynthesis
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+    if (!SpeechRecognition) {
+      setIsBrowserSupported(false)
+      setError("Speech Recognition is not supported in your browser. Please use Chrome, Edge, or Safari.")
+    }
   }, [])
 
   const startRecording = () => {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
 
     if (!SpeechRecognition) {
-      alert("Speech Recognition not supported in your browser")
+      setError("Speech Recognition not supported in your browser. Please use Chrome, Edge, or Safari.")
+      return
+    }
+
+    if (window.location.protocol !== "https:" && window.location.hostname !== "localhost") {
+      setError("Voice recognition requires a secure connection (HTTPS). Please access this page via HTTPS.")
       return
     }
 
@@ -35,6 +48,7 @@ export default function VoiceCallPage() {
     recognition.onstart = () => {
       setIsRecording(true)
       setTranscript("")
+      setError(null)
     }
 
     recognition.onresult = (event: any) => {
@@ -47,15 +61,31 @@ export default function VoiceCallPage() {
     }
 
     recognition.onerror = (event: any) => {
-      console.error("Recognition error:", event.error)
+      console.error("[v0] Recognition error:", event.error)
       setIsRecording(false)
+
+      if (event.error === "network") {
+        setError("Network error. Please check your internet connection and ensure you're using HTTPS.")
+      } else if (event.error === "not-allowed") {
+        setError("Microphone access denied. Please allow microphone access in your browser settings.")
+      } else if (event.error === "no-speech") {
+        setError("No speech detected. Please try again and speak clearly.")
+      } else {
+        setError(`Speech recognition error: ${event.error}`)
+      }
     }
 
     recognition.onend = () => {
       setIsRecording(false)
     }
 
-    recognition.start()
+    try {
+      recognition.start()
+    } catch (err) {
+      console.error("[v0] Failed to start recognition:", err)
+      setError("Failed to start voice recognition. Please try again.")
+      setIsRecording(false)
+    }
   }
 
   const stopRecording = () => {
@@ -66,18 +96,35 @@ export default function VoiceCallPage() {
   }
 
   const handleVoiceInput = async (text: string) => {
-    // This would connect to the AI API
-    const response = await fetch("/api/gemini/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages: [{ role: "user", content: text }] }),
-    })
+    try {
+      const response = await fetch("/api/gemini-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: [{ role: "user", content: text }] }),
+      })
 
-    if (response.ok) {
-      const data = await response.json()
-      const aiText = data.content
-      setAiResponse(aiText)
-      speakResponse(aiText)
+      if (response.ok) {
+        const reader = response.body?.getReader()
+        const decoder = new TextDecoder()
+        let aiText = ""
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
+            const chunk = decoder.decode(value)
+            aiText += chunk
+          }
+        }
+
+        setAiResponse(aiText)
+        speakResponse(aiText)
+      } else {
+        setError("Failed to get AI response. Please try again.")
+      }
+    } catch (err) {
+      console.error("[v0] API error:", err)
+      setError("Failed to connect to AI. Please check your internet connection.")
     }
   }
 
@@ -127,6 +174,13 @@ export default function VoiceCallPage() {
             </p>
           </div>
         </div>
+
+        {error && (
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-4 mb-8 flex gap-3">
+            <AlertCircle className="w-5 h-5 text-destructive flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-foreground">{error}</p>
+          </div>
+        )}
 
         {/* Main Interface */}
         <div className="bg-card rounded-2xl p-8 border border-border mb-8">
@@ -185,7 +239,8 @@ export default function VoiceCallPage() {
             {!isRecording && !isAISpeaking && (
               <button
                 onClick={startRecording}
-                className="bg-primary text-primary-foreground px-6 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity flex items-center gap-2"
+                disabled={!isBrowserSupported}
+                className="bg-primary text-primary-foreground px-6 py-3 rounded-full font-semibold hover:opacity-90 transition-opacity flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Mic className="w-5 h-5" />
                 Start Speaking
@@ -224,6 +279,10 @@ export default function VoiceCallPage() {
             <li>You can continue the conversation by speaking again</li>
             <li>If you need immediate help, click the emergency button anytime</li>
           </ol>
+          <p className="text-xs text-muted-foreground mt-4">
+            Note: Voice recognition requires a secure HTTPS connection and works best in Chrome, Edge, or Safari
+            browsers.
+          </p>
         </div>
       </main>
 
