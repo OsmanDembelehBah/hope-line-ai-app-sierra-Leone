@@ -1,10 +1,7 @@
-"use client"
-
 import { NavBar } from "@/components/nav-bar"
 import { Header } from "@/components/header"
 import { Footer } from "@/components/footer"
 import { Mail, Linkedin } from "lucide-react"
-import { motion } from "framer-motion"
 
 interface TeamMember {
   id: number
@@ -66,25 +63,6 @@ const teamMembers: TeamMember[] = [
   },
 ]
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.15,
-    },
-  },
-}
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: "easeOut" },
-  },
-}
-
 export default function TeamPage() {
   return (
     <div className="min-h-screen bg-background md:ml-64 md:pb-0 pb-20">
@@ -94,12 +72,7 @@ export default function TeamPage() {
         <Header title="Our Team" subtitle="Dedicated to providing compassionate mental health support" />
 
         {/* Mission Statement */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-          className="mt-8 mb-12"
-        >
+        <section className="mt-8 mb-12 animate-fade-in">
           <div className="gradient-calm rounded-2xl p-6">
             <h2 className="text-2xl font-bold text-primary mb-3">Meet Our Leadership</h2>
             <p className="text-foreground leading-relaxed">
@@ -108,16 +81,10 @@ export default function TeamPage() {
               that HopeLine remains trauma-informed, culturally sensitive, and technologically robust.
             </p>
           </div>
-        </motion.section>
+        </section>
 
         {/* CEO Spotlight Section - Larger Featured Card */}
-        <motion.section
-          initial={{ opacity: 0, y: 30 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-          className="mt-12 mb-16"
-        >
+        <section className="mt-12 mb-16 animate-slide-up">
           <div className="flex justify-center">
             <div className="w-full max-w-2xl bg-gradient-to-br from-purple-900/20 to-indigo-900/20 rounded-3xl overflow-hidden border-2 border-purple-500/30 hover:border-purple-500/60 hover:shadow-[0_0_40px_rgba(147,51,234,0.4)] transition-all duration-500 transform hover:scale-[1.02]">
               {/* CEO Image */}
@@ -163,22 +130,15 @@ export default function TeamPage() {
               </div>
             </div>
           </div>
-        </motion.section>
+        </section>
 
-        {/* Other Team Members Grid with Animations */}
-        <motion.section
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="mt-12"
-        >
+        {/* Other Team Members Grid */}
+        <section className="mt-12">
           <h3 className="text-2xl font-bold text-center mb-8 text-foreground">Our Team</h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {teamMembers.slice(1).map((member) => (
-              <motion.div
+              <div
                 key={member.id}
-                variants={itemVariants}
                 className="bg-card rounded-2xl overflow-hidden border border-border hover:shadow-lg hover:border-purple-500/30 transition-all duration-300 hover:scale-[1.02]"
               >
                 {/* Image */}
@@ -223,26 +183,20 @@ export default function TeamPage() {
                     </button>
                   </div>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </div>
-        </motion.section>
+        </section>
 
         {/* Limkokwing Attribution - Updated */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mt-12 bg-card rounded-2xl p-8 border border-border text-center"
-        >
+        <section className="mt-12 bg-card rounded-2xl p-8 border border-border text-center animate-fade-in">
           <h3 className="text-lg font-bold text-primary mb-2">University Partnership</h3>
           <p className="text-foreground mb-2">HopeLine AI is developed in partnership with and supported by</p>
           <p className="text-xl font-bold text-primary">Limkokwing University Sierra Leone</p>
           <p className="text-sm text-muted-foreground mt-2">
             Empowering innovation in technology and social impact through education and collaboration.
           </p>
-        </motion.section>
+        </section>
       </main>
 
       <Footer />
