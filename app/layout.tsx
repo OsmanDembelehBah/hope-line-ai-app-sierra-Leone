@@ -4,7 +4,7 @@ import "./globals.css"
 import { FloatingAssistantWrapper } from "./floating-assistant-wrapper"
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://hopeline-ai.vercel.app"),
+  metadataBase: new URL("https://v0-hope-line-ai-app.vercel.app"),
   title: {
     default: "HopeLine AI — Sierra Leone | Mental Health Crisis Support & Recovery",
     template: "%s | HopeLine AI Sierra Leone",
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "HopeLine AI — Free Mental Health Support in Sierra Leone",
     description: "24/7 anonymous AI-powered emotional support for addiction, trauma, and mental health crises. Free and confidential.",
-    url: "https://hopeline-ai.vercel.app",
+    url: "https://v0-hope-line-ai-app.vercel.app",
     siteName: "HopeLine AI Sierra Leone",
     type: "website",
     locale: "en_US",

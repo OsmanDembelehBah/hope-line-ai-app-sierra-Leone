@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next"
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = "https://hopeline-ai.vercel.app"
+  const baseUrl = "https://v0-hope-line-ai-app.vercel.app"
   
   return [
     {

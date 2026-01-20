@@ -5,4 +5,4 @@ User-agent: *
 Allow: /
 
 # Sitemap location
-Sitemap: https://hopeline-ai.vercel.app/sitemap.xml
+Sitemap: https://v0-hope-line-ai-app.vercel.app/sitemap.xml
