@@ -1,0 +1,144 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset
+      xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"
+      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9
+            http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd">
+
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>1.00</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/dashboard</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/crisis</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/chat</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/music</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/breathing</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/community</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/auth/login</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/news</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/team</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/agencies</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/journal</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/challenges</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/contact</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/admin</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.80</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/settings</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/features</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/stay-alive</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/survivor-support</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/recovery</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/rehab-centers</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/rainbo</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/rehab-contact</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/relax</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/auth/reset-password</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/auth/sign-up</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.64</priority>
+</url>
+<url>
+  <loc>https://v0-hope-line-ai-app.vercel.app/chat?topic=survivor</loc>
+  <lastmod>2026-01-20T17:34:52+00:00</lastmod>
+  <priority>0.51</priority>
+</url>
+
+</urlset>
