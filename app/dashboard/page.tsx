@@ -31,6 +31,8 @@ import {
   Smile,
   Frown,
   Meh,
+  Video,
+  ExternalLink,
 } from "lucide-react"
 
 interface Story {
@@ -73,11 +75,11 @@ export default function DashboardPage() {
 
   const quickActions = [
     { icon: MessageCircle, label: "AI Chat", href: "/chat", color: "bg-purple-500", description: "Talk to counselor" },
+    { icon: Video, label: "Therapy", href: "/therapy", color: "bg-gradient-to-br from-purple-500 to-pink-500", description: "Live AI session" },
+    { icon: Activity, label: "Angle", href: "/angle", color: "bg-gradient-to-br from-teal-500 to-cyan-500", description: "Movement analysis" },
     { icon: Wind, label: "Breathing", href: "/breathing", color: "bg-blue-500", description: "Calm exercises" },
     { icon: Music, label: "Music", href: "/music", color: "bg-pink-500", description: "Therapy sounds" },
     { icon: Brain, label: "Journal", href: "/journal", color: "bg-indigo-500", description: "Write thoughts" },
-    { icon: Target, label: "Challenges", href: "/challenges", color: "bg-green-500", description: "7-day goals" },
-    { icon: BookOpen, label: "Stories", href: "/community", color: "bg-orange-500", description: "Read & share" },
   ]
 
   const stats = [
@@ -189,6 +191,73 @@ export default function DashboardPage() {
               >
                 Crisis Resources
               </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* New Features Section */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* HopeLine Therapy Card */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-purple-900/60 to-pink-900/60 rounded-2xl p-6 border border-purple-500/30">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/20 rounded-full blur-3xl" />
+            <div className="relative">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                  <Brain className="w-7 h-7 text-white" />
+                </div>
+                <span className="px-3 py-1 bg-purple-500/30 text-purple-200 text-xs font-bold rounded-full border border-purple-400/30">
+                  NEW FEATURE
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">HopeLine Therapy</h3>
+              <p className="text-zinc-300 text-sm mb-4 leading-relaxed">
+                Live AI video therapy sessions. See yourself on camera while talking face-to-face with an AI therapist. Choose from multiple voice options.
+              </p>
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/therapy"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-xl hover:bg-purple-500 transition-colors text-sm font-semibold shadow-lg shadow-purple-600/30"
+                >
+                  <Video className="w-4 h-4" />
+                  Start Therapy Session
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+              </div>
+            </div>
+          </div>
+
+          {/* HopeLine Angle Card */}
+          <div className="relative overflow-hidden bg-gradient-to-br from-teal-900/60 to-cyan-900/60 rounded-2xl p-6 border border-teal-500/30">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/20 rounded-full blur-3xl" />
+            <div className="relative">
+              <div className="flex items-start justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
+                  <Activity className="w-7 h-7 text-white" />
+                </div>
+                <span className="px-3 py-1 bg-teal-500/30 text-teal-200 text-xs font-bold rounded-full border border-teal-400/30">
+                  NEW FEATURE
+                </span>
+              </div>
+              <h3 className="text-xl font-bold text-white mb-2">HopeLine Angle</h3>
+              <p className="text-zinc-300 text-sm mb-4 leading-relaxed">
+                AI-powered movement analysis with 15+ exercises. Use your webcam for real-time pose estimation and physical health guidance.
+              </p>
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/angle"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 bg-teal-600 text-white rounded-xl hover:bg-teal-500 transition-colors text-sm font-semibold shadow-lg shadow-teal-600/30"
+                >
+                  <Activity className="w-4 h-4" />
+                  Explore Angle
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+                <Link
+                  href="/angle/session"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 bg-zinc-800/80 text-zinc-200 rounded-xl hover:bg-zinc-700 transition-colors text-sm"
+                >
+                  Start Session
+                </Link>
+              </div>
             </div>
           </div>
         </div>
