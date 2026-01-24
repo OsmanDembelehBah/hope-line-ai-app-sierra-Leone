@@ -24,6 +24,8 @@ import {
   Square,
   Play,
   StopCircle,
+  AlertCircle,
+  Keyboard,
 } from "lucide-react"
 
 interface Message {
@@ -56,7 +58,7 @@ function AIAvatar({ isSpeaking, isThinking, size = "large" }: { isSpeaking: bool
   const sizeClasses = size === "large" ? "w-28 h-28 md:w-36 md:h-36" : "w-16 h-16"
   
   return (
-    <div className={`relative ${sizeClasses}`}>
+    <div className={`relative ${sizeClasses} mx-auto`}>
       {isSpeaking && (
         <>
           <div className="absolute inset-[-4px] rounded-full bg-gradient-to-r from-purple-500 to-pink-500 animate-ping opacity-30" />
@@ -178,12 +180,56 @@ export default function TherapyPage() {
   const [showChat, setShowChat] = useState(false)
   const [selectedVoice, setSelectedVoice] = useState<VoiceOption>(voiceOptions[0])
   const [transcript, setTranscript] = useState("")
+  const [speechSupported, setSpeechSupported] = useState(true)
+  const [voicesLoaded, setVoicesLoaded] = useState(false)
+  const [useTextInput, setUseTextInput] = useState(false)
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([])
   
   const videoRef = useRef<HTMLVideoElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const recognitionRef = useRef<any>(null)
   const finalTranscriptRef = useRef<string>("")
+
+  // Check for speech recognition support
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
+      setSpeechSupported(!!SpeechRecognition)
+      if (!SpeechRecognition) {
+        setUseTextInput(true)
+      }
+    }
+  }, [])
+
+  // Load voices - with iOS compatibility
+  useEffect(() => {
+    if (typeof window === "undefined" || !("speechSynthesis" in window)) return
+
+    const loadVoices = () => {
+      const voices = window.speechSynthesis.getVoices()
+      if (voices.length > 0) {
+        setAvailableVoices(voices)
+        setVoicesLoaded(true)
+      }
+    }
+
+    // Load voices immediately
+    loadVoices()
+
+    // Also listen for voiceschanged event (needed for some browsers)
+    window.speechSynthesis.onvoiceschanged = loadVoices
+
+    // iOS Safari workaround - trigger voice loading
+    const utterance = new SpeechSynthesisUtterance("")
+    utterance.volume = 0
+    window.speechSynthesis.speak(utterance)
+    window.speechSynthesis.cancel()
+
+    return () => {
+      window.speechSynthesis.onvoiceschanged = null
+    }
+  }, [])
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -204,24 +250,30 @@ export default function TherapyPage() {
   }
 
   const getSystemVoice = useCallback(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) return null
+    if (availableVoices.length === 0) return null
     
-    const voices = window.speechSynthesis.getVoices()
     const genderKeywords = selectedVoice.gender === "female" 
-      ? ["female", "woman", "samantha", "victoria", "karen", "moira", "fiona", "zira", "hazel", "susan"]
+      ? ["female", "woman", "samantha", "victoria", "karen", "moira", "fiona", "zira", "hazel", "susan", "siri"]
       : ["male", "man", "daniel", "alex", "fred", "david", "george", "james", "thomas", "mark"]
     
-    let matchedVoice = voices.find(v => 
+    // Try to find a voice matching the selected language and gender
+    let matchedVoice = availableVoices.find(v => 
       v.lang.startsWith(selectedVoice.lang.split("-")[0]) &&
       genderKeywords.some(k => v.name.toLowerCase().includes(k))
     )
     
+    // Fallback to any voice in the selected language
     if (!matchedVoice) {
-      matchedVoice = voices.find(v => v.lang.startsWith(selectedVoice.lang.split("-")[0]))
+      matchedVoice = availableVoices.find(v => v.lang.startsWith(selectedVoice.lang.split("-")[0]))
     }
     
-    return matchedVoice || voices[0]
-  }, [selectedVoice])
+    // Fallback to any English voice
+    if (!matchedVoice) {
+      matchedVoice = availableVoices.find(v => v.lang.startsWith("en"))
+    }
+    
+    return matchedVoice || availableVoices[0]
+  }, [selectedVoice, availableVoices])
 
   const stopSpeaking = useCallback(() => {
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
@@ -233,10 +285,17 @@ export default function TherapyPage() {
 
   const speakText = useCallback((text: string, onEnd?: () => void) => {
     if (!voiceEnabled || typeof window === "undefined" || !("speechSynthesis" in window)) {
-      onEnd?.()
+      // If voice is disabled, still show caption
+      setCurrentCaption(text)
+      setCaptionSpeaker("ai")
+      setTimeout(() => {
+        setCurrentCaption("")
+        onEnd?.()
+      }, 5000)
       return
     }
 
+    // Cancel any ongoing speech
     window.speechSynthesis.cancel()
 
     const utterance = new SpeechSynthesisUtterance(text)
@@ -245,7 +304,9 @@ export default function TherapyPage() {
     utterance.volume = 1
     
     const voice = getSystemVoice()
-    if (voice) utterance.voice = voice
+    if (voice) {
+      utterance.voice = voice
+    }
 
     utterance.onstart = () => {
       setIsSpeaking(true)
@@ -261,13 +322,20 @@ export default function TherapyPage() {
       onEnd?.()
     }
 
-    utterance.onerror = () => {
+    utterance.onerror = (e) => {
+      // On error, still show the text as caption
       setIsSpeaking(false)
       setConnectionStatus("connected")
+      setCurrentCaption(text)
+      setCaptionSpeaker("ai")
+      setTimeout(() => setCurrentCaption(""), 5000)
       onEnd?.()
     }
 
-    window.speechSynthesis.speak(utterance)
+    // iOS Safari workaround - need a small delay
+    setTimeout(() => {
+      window.speechSynthesis.speak(utterance)
+    }, 100)
   }, [voiceEnabled, selectedVoice, getSystemVoice])
 
   const sendMessageToAI = useCallback(async (userText: string) => {
@@ -349,9 +417,16 @@ export default function TherapyPage() {
       stopSpeaking()
     }
 
+    if (!speechSupported) {
+      setUseTextInput(true)
+      setShowChat(true)
+      return
+    }
+
     const recognition = initSpeechRecognition()
     if (!recognition) {
-      alert("Speech recognition is not supported in your browser. Please use Chrome or Edge.")
+      setUseTextInput(true)
+      setShowChat(true)
       return
     }
 
@@ -382,8 +457,17 @@ export default function TherapyPage() {
     }
 
     recognition.onerror = (event: any) => {
-      if (event.error !== "no-speech" && event.error !== "aborted") {
-        console.log("[v0] Speech recognition error:", event.error)
+      if (event.error === "not-allowed") {
+        setUseTextInput(true)
+        setShowChat(true)
+      }
+    }
+
+    recognition.onend = () => {
+      // Recognition ended unexpectedly
+      if (isRecording) {
+        setIsRecording(false)
+        setConnectionStatus("connected")
       }
     }
 
@@ -392,9 +476,10 @@ export default function TherapyPage() {
       setIsRecording(true)
       setConnectionStatus("listening")
     } catch (e) {
-      console.log("[v0] Could not start recognition")
+      setUseTextInput(true)
+      setShowChat(true)
     }
-  }, [micEnabled, isThinking, isSpeaking, stopSpeaking, initSpeechRecognition])
+  }, [micEnabled, isThinking, isSpeaking, stopSpeaking, initSpeechRecognition, speechSupported, isRecording])
 
   // Stop recording - manual tap
   const stopRecording = useCallback(() => {
@@ -442,14 +527,18 @@ export default function TherapyPage() {
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream
-        videoRef.current.onloadedmetadata = () => {
-          videoRef.current?.play().catch(() => {})
+        // iOS requires this to be called after user interaction
+        try {
+          await videoRef.current.play()
+        } catch (e) {
+          // Will try again on user interaction
         }
       }
       setCameraEnabled(true)
+      return true
     } catch (error) {
-      console.log("[v0] Camera error:", error)
       setCameraEnabled(false)
+      return false
     }
   }, [])
 
@@ -461,14 +550,15 @@ export default function TherapyPage() {
     setCameraEnabled(false)
   }, [])
 
-  const toggleCamera = useCallback(() => {
+  const toggleCamera = useCallback(async () => {
     if (cameraEnabled) {
       stopCamera()
     } else {
-      requestCamera()
+      await requestCamera()
     }
   }, [cameraEnabled, stopCamera, requestCamera])
 
+  // Re-attach stream when entering active state
   useEffect(() => {
     if (sessionState === "active" && streamRef.current && videoRef.current) {
       videoRef.current.srcObject = streamRef.current
@@ -476,24 +566,18 @@ export default function TherapyPage() {
     }
   }, [sessionState])
 
-  useEffect(() => {
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.getVoices()
-      window.speechSynthesis.onvoiceschanged = () => {
-        window.speechSynthesis.getVoices()
-      }
-    }
-  }, [])
-
   const startSession = useCallback(async () => {
     setConnectionStatus("connecting")
+    
+    // Request camera
     await requestCamera()
     
+    // Small delay for UI feedback
     setTimeout(() => {
       setConnectionStatus("connected")
       setSessionState("active")
       
-      const greeting = `Hello, I'm ${selectedVoice.name}, your HopeLine AI therapist. Welcome to this safe and confidential space. I can see you now, and I want you to know that I'm fully here with you. How are you feeling in this moment? Whenever you're ready to share, tap the microphone button to start speaking, and tap again when you're done.`
+      const greeting = `Hello, I'm ${selectedVoice.name}, your HopeLine AI therapist. Welcome to this safe and confidential space. I'm fully here with you. How are you feeling right now? ${speechSupported ? "Tap the microphone button to speak, or use the chat to type." : "Use the chat button to type your message."}`
       
       const greetingMessage: Message = {
         id: Date.now().toString(),
@@ -502,9 +586,13 @@ export default function TherapyPage() {
         timestamp: new Date()
       }
       setMessages([greetingMessage])
-      speakText(greeting)
+      
+      // Speak after a short delay to ensure everything is ready
+      setTimeout(() => {
+        speakText(greeting)
+      }, 500)
     }, 2000)
-  }, [requestCamera, selectedVoice, speakText])
+  }, [requestCamera, selectedVoice, speakText, speechSupported])
 
   const endSession = useCallback(() => {
     stopCamera()
@@ -558,35 +646,44 @@ export default function TherapyPage() {
                 Face-to-face video sessions with your compassionate AI therapist. Talk naturally, be heard, and receive supportive guidance.
               </p>
 
+              {!speechSupported && (
+                <div className="mb-6 p-4 bg-yellow-900/30 border border-yellow-500/30 rounded-xl">
+                  <div className="flex items-center gap-3 text-yellow-400">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                    <p className="text-sm text-left">Voice input is not supported on this browser. You can still use text chat during the session.</p>
+                  </div>
+                </div>
+              )}
+
               <div className="grid sm:grid-cols-3 gap-4 mb-10">
                 <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
                   <div className="w-10 h-10 rounded-lg bg-purple-500/10 flex items-center justify-center mx-auto mb-3">
                     <Camera className="w-5 h-5 text-purple-400" />
                   </div>
                   <h3 className="font-semibold mb-1">Video Session</h3>
-                  <p className="text-sm text-zinc-500">See yourself on camera during the session</p>
+                  <p className="text-sm text-zinc-500">See yourself on camera</p>
                 </div>
                 <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
                   <div className="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center mx-auto mb-3">
                     <Mic className="w-5 h-5 text-pink-400" />
                   </div>
-                  <h3 className="font-semibold mb-1">Voice Chat</h3>
-                  <p className="text-sm text-zinc-500">Speak naturally and hear AI responses</p>
+                  <h3 className="font-semibold mb-1">Voice & Text</h3>
+                  <p className="text-sm text-zinc-500">Speak or type to chat</p>
                 </div>
                 <div className="bg-zinc-900 rounded-xl p-4 border border-zinc-800">
-                  <div className="w-10 h-10 rounded-lg bg-teal-500/10 flex items-center justify-center mx-auto mb-3">
-                    <Shield className="w-5 h-5 text-teal-400" />
+                  <div className="w-10 h-10 rounded-lg bg-indigo-500/10 flex items-center justify-center mx-auto mb-3">
+                    <Shield className="w-5 h-5 text-indigo-400" />
                   </div>
                   <h3 className="font-semibold mb-1">Private & Safe</h3>
-                  <p className="text-sm text-zinc-500">Your session stays confidential</p>
+                  <p className="text-sm text-zinc-500">Confidential session</p>
                 </div>
               </div>
 
               <button
                 onClick={() => setSessionState("consent")}
-                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl font-bold text-lg hover:from-purple-500 hover:to-pink-500 transition-all transform hover:scale-105"
+                className="px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl text-lg font-bold hover:from-purple-500 hover:to-pink-500 transition-all shadow-lg shadow-purple-500/25"
               >
-                Begin Session
+                Start Therapy Session
               </button>
             </div>
           </div>
@@ -595,100 +692,136 @@ export default function TherapyPage() {
 
       {/* Consent Screen */}
       {sessionState === "consent" && (
-        <div className="min-h-screen flex items-center justify-center p-6">
-          <div className="max-w-lg mx-auto">
-            <div className="bg-zinc-900 rounded-3xl p-8 border border-zinc-800">
-              <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-8 h-8 text-purple-400" />
-              </div>
+        <div className="min-h-screen flex flex-col">
+          <header className="p-4 border-b border-zinc-800">
+            <div className="max-w-6xl mx-auto flex items-center justify-between">
+              <button onClick={() => setSessionState("landing")} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+                <span>Back</span>
+              </button>
+              <h1 className="text-lg font-bold">Session Agreement</h1>
+              <div className="w-20" />
+            </div>
+          </header>
 
-              <h2 className="text-2xl font-bold text-center mb-6">Before We Begin</h2>
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="max-w-xl mx-auto">
+              <div className="bg-zinc-900 rounded-2xl p-8 border border-zinc-800">
+                <div className="w-16 h-16 rounded-2xl bg-purple-500/10 flex items-center justify-center mx-auto mb-6">
+                  <Shield className="w-8 h-8 text-purple-400" />
+                </div>
+                
+                <h2 className="text-2xl font-bold text-center mb-6">Before We Begin</h2>
+                
+                <div className="space-y-4 mb-8 text-zinc-400">
+                  <div className="flex gap-3">
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                    <p>This is an AI-powered therapy session. While supportive, it's not a replacement for professional mental health care.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                    <p>Your session is private. Video stays on your device and is not recorded or stored.</p>
+                  </div>
+                  <div className="flex gap-3">
+                    <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
+                    <p>If you're in crisis or having thoughts of self-harm, please contact emergency services or a crisis hotline.</p>
+                  </div>
+                </div>
 
-              <div className="space-y-4 mb-8">
-                <div className="flex gap-3">
-                  <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-zinc-300">This is a supportive AI, not a licensed therapist</p>
-                </div>
-                <div className="flex gap-3">
-                  <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-zinc-300">Your camera stays local - video is not recorded</p>
-                </div>
-                <div className="flex gap-3">
-                  <Check className="w-5 h-5 text-green-400 flex-shrink-0 mt-0.5" />
-                  <p className="text-zinc-300">For emergencies, contact professional services</p>
-                </div>
-              </div>
-
-              <div className="space-y-3">
                 <button
                   onClick={() => setSessionState("settings")}
                   className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold hover:from-purple-500 hover:to-pink-500 transition-all"
                 >
                   I Understand, Continue
                 </button>
-                <button
-                  onClick={() => setSessionState("landing")}
-                  className="w-full py-3 bg-zinc-800 rounded-xl hover:bg-zinc-700 transition-colors"
-                >
-                  Go Back
-                </button>
               </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Voice Settings */}
+      {/* Voice Selection */}
       {sessionState === "settings" && (
-        <div className="min-h-screen flex items-center justify-center p-6">
-          <div className="max-w-lg mx-auto w-full">
-            <h2 className="text-2xl font-bold text-center mb-2">Choose Your Therapist Voice</h2>
-            <p className="text-zinc-500 text-center mb-8">Select the voice that feels most comfortable for you</p>
-
-            <div className="space-y-3 mb-8">
-              {voiceOptions.map((voice) => (
-                <button
-                  key={voice.id}
-                  onClick={() => setSelectedVoice(voice)}
-                  className={`w-full p-4 rounded-xl border text-left transition-all flex items-center gap-4 ${
-                    selectedVoice.id === voice.id
-                      ? "bg-purple-500/10 border-purple-500/50"
-                      : "bg-zinc-900 border-zinc-800 hover:border-zinc-700"
-                  }`}
-                >
-                  <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                    voice.gender === "female" ? "bg-pink-500/20" : "bg-blue-500/20"
-                  }`}>
-                    <User className={`w-6 h-6 ${voice.gender === "female" ? "text-pink-400" : "text-blue-400"}`} />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-white">{voice.name}</h3>
-                    <p className="text-sm text-zinc-500">{voice.description}</p>
-                  </div>
-                  {selectedVoice.id === voice.id && (
-                    <Check className="w-5 h-5 text-purple-400" />
-                  )}
-                </button>
-              ))}
+        <div className="min-h-screen flex flex-col">
+          <header className="p-4 border-b border-zinc-800">
+            <div className="max-w-6xl mx-auto flex items-center justify-between">
+              <button onClick={() => setSessionState("consent")} className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
+                <ArrowLeft className="w-5 h-5" />
+                <span>Back</span>
+              </button>
+              <h1 className="text-lg font-bold">Choose Your Therapist</h1>
+              <div className="w-20" />
             </div>
+          </header>
 
-            <button
-              onClick={startSession}
-              className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold hover:from-purple-500 hover:to-pink-500 transition-all flex items-center justify-center gap-2"
-            >
-              <Play className="w-5 h-5" />
-              Start Therapy Session
-            </button>
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="max-w-2xl mx-auto w-full">
+              <div className="text-center mb-8">
+                <AIAvatar isSpeaking={false} size="large" />
+                <h2 className="text-2xl font-bold mt-6 mb-2">Select a Voice</h2>
+                <p className="text-zinc-400">Choose the voice that feels most comfortable for you</p>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4 mb-8">
+                {voiceOptions.map((voice) => (
+                  <button
+                    key={voice.id}
+                    onClick={() => setSelectedVoice(voice)}
+                    className={`p-5 rounded-2xl border text-left transition-all ${
+                      selectedVoice.id === voice.id
+                        ? "bg-purple-500/20 border-purple-500"
+                        : "bg-zinc-900 border-zinc-800 hover:border-zinc-700"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-lg">{voice.name}</span>
+                      <span className={`text-xs px-2 py-1 rounded-full ${
+                        voice.gender === "female" 
+                          ? "bg-pink-500/20 text-pink-400" 
+                          : "bg-blue-500/20 text-blue-400"
+                      }`}>
+                        {voice.gender === "female" ? "Female" : "Male"}
+                      </span>
+                    </div>
+                    <p className="text-sm text-zinc-400">{voice.description}</p>
+                    {selectedVoice.id === voice.id && (
+                      <div className="mt-3 flex items-center gap-2 text-purple-400">
+                        <Check className="w-4 h-4" />
+                        <span className="text-sm font-medium">Selected</span>
+                      </div>
+                    )}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={startSession}
+                disabled={connectionStatus === "connecting"}
+                className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold hover:from-purple-500 hover:to-pink-500 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {connectionStatus === "connecting" ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Connecting...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-5 h-5" />
+                    Start Session with {selectedVoice.name}
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
       )}
 
       {/* Active Session */}
       {sessionState === "active" && (
-        <div className="h-screen flex flex-col bg-black">
+        <div className="h-screen flex flex-col bg-zinc-950">
           {/* Main Video Area */}
           <div className="flex-1 relative overflow-hidden">
-            {/* User's Video Feed */}
+            {/* User Video Feed - Full Background */}
             {cameraEnabled ? (
               <video
                 ref={videoRef}
@@ -709,13 +842,13 @@ export default function TherapyPage() {
             ) : (
               <div className="absolute inset-0 flex items-center justify-center bg-zinc-900">
                 <div className="text-center">
-                  <div className="w-24 h-24 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4">
-                    <User className="w-12 h-12 text-zinc-600" />
+                  <div className="w-32 h-32 rounded-full bg-zinc-800 flex items-center justify-center mx-auto mb-4">
+                    <User className="w-16 h-16 text-zinc-600" />
                   </div>
-                  <p className="text-zinc-500 mb-4">Camera is off</p>
+                  <p className="text-zinc-400 mb-4">Camera is off</p>
                   <button
                     onClick={toggleCamera}
-                    className="px-6 py-3 bg-teal-600 rounded-xl hover:bg-teal-500 transition-colors"
+                    className="px-6 py-3 bg-purple-600 rounded-xl font-medium hover:bg-purple-500 transition-colors"
                   >
                     Turn on Camera
                   </button>
@@ -723,110 +856,174 @@ export default function TherapyPage() {
               </div>
             )}
 
-            {/* Status Indicator */}
-            <div className="absolute top-4 left-4 z-10">
+            {/* Gradient Overlay */}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/40 pointer-events-none" />
+
+            {/* Top Bar */}
+            <div className="absolute top-4 left-4 right-4 flex items-center justify-between z-10">
               <StatusIndicator status={connectionStatus} />
-            </div>
-
-            {/* Session Timer */}
-            <div className="absolute top-4 right-4 z-10">
-              <div className="px-4 py-2 bg-black/60 backdrop-blur-sm rounded-full border border-zinc-700">
-                <span className="text-sm font-mono text-white">{formatDuration(sessionDuration)}</span>
-              </div>
-            </div>
-
-            {/* AI Therapist Panel */}
-            <div className="absolute top-20 right-4 z-10">
-              <div className="bg-zinc-900/90 backdrop-blur-md rounded-2xl p-4 border border-zinc-700 shadow-xl">
-                <div className="flex items-center gap-3 mb-3">
-                  <AIAvatar isSpeaking={isSpeaking} isThinking={isThinking} size="small" />
-                  <div>
-                    <p className="font-semibold text-white text-sm">{selectedVoice.name}</p>
-                    <p className="text-xs text-zinc-500">AI Therapist</p>
-                  </div>
+              
+              <div className="flex items-center gap-3">
+                <div className="px-4 py-2 bg-black/60 backdrop-blur-sm rounded-full border border-zinc-700">
+                  <span className="text-sm font-mono text-white">{formatDuration(sessionDuration)}</span>
                 </div>
-                <VoiceWaveform isActive={isSpeaking} type="incoming" />
+                <button
+                  onClick={endSession}
+                  className="p-3 bg-red-600 rounded-full hover:bg-red-500 transition-colors"
+                >
+                  <PhoneOff className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
-            {/* End Call Button */}
-            <div className="absolute top-20 left-4 z-10">
-              <button
-                onClick={endSession}
-                className="p-3 bg-red-600 rounded-full hover:bg-red-500 transition-colors"
-              >
-                <PhoneOff className="w-5 h-5" />
-              </button>
+            {/* AI Avatar - Picture in Picture */}
+            <div className="absolute top-24 right-4 z-10">
+              <div className="bg-black/60 backdrop-blur-sm rounded-2xl p-4 border border-zinc-700">
+                <AIAvatar isSpeaking={isSpeaking} isThinking={isThinking} size="small" />
+                <p className="text-center text-xs text-zinc-400 mt-2">{selectedVoice.name}</p>
+                
+                {/* Voice Waveform */}
+                <div className="mt-2">
+                  <VoiceWaveform isActive={isSpeaking} type="incoming" />
+                </div>
+              </div>
             </div>
+
+            {/* User Speaking Waveform */}
+            {isRecording && (
+              <div className="absolute top-24 left-4 z-10">
+                <div className="bg-black/60 backdrop-blur-sm rounded-2xl px-4 py-3 border border-teal-500/50">
+                  <p className="text-xs text-teal-400 mb-2 font-medium">You are speaking...</p>
+                  <VoiceWaveform isActive={isRecording} type="outgoing" />
+                </div>
+              </div>
+            )}
 
             {/* Live Caption */}
             <LiveCaption 
               text={currentCaption} 
               speaker={captionSpeaker} 
-              isLive={isRecording || isSpeaking}
+              isLive={isRecording || isSpeaking} 
             />
 
-            {/* User Voice Waveform when recording */}
-            {isRecording && (
-              <div className="absolute bottom-52 left-1/2 transform -translate-x-1/2 z-20">
-                <div className="bg-zinc-900/80 backdrop-blur-sm rounded-full px-6 py-3 border border-teal-500/30">
-                  <VoiceWaveform isActive={isRecording} type="outgoing" />
+            {/* Chat Panel */}
+            {showChat && (
+              <div className="absolute bottom-36 left-4 right-4 md:left-auto md:right-4 md:w-96 max-h-[50vh] z-20">
+                <div className="bg-zinc-900/95 backdrop-blur-md rounded-2xl border border-zinc-700 overflow-hidden">
+                  <div className="p-4 border-b border-zinc-800">
+                    <h3 className="font-semibold">Chat</h3>
+                  </div>
+                  <div className="h-64 overflow-y-auto p-4 space-y-3">
+                    {messages.map((msg) => (
+                      <div
+                        key={msg.id}
+                        className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+                      >
+                        <div
+                          className={`max-w-[85%] px-4 py-2 rounded-2xl ${
+                            msg.role === "user"
+                              ? "bg-teal-600 text-white"
+                              : "bg-zinc-800 text-zinc-100"
+                          }`}
+                        >
+                          <p className="text-sm">{msg.content}</p>
+                        </div>
+                      </div>
+                    ))}
+                    {isThinking && (
+                      <div className="flex justify-start">
+                        <div className="bg-zinc-800 px-4 py-2 rounded-2xl">
+                          <Loader2 className="w-4 h-4 animate-spin text-purple-400" />
+                        </div>
+                      </div>
+                    )}
+                    <div ref={messagesEndRef} />
+                  </div>
+                  <div className="p-4 border-t border-zinc-800">
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        value={inputText}
+                        onChange={(e) => setInputText(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                        placeholder="Type a message..."
+                        className="flex-1 px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-xl text-white placeholder-zinc-500 focus:outline-none focus:border-purple-500"
+                      />
+                      <button
+                        onClick={handleSend}
+                        disabled={!inputText.trim() || isThinking}
+                        className="p-2 bg-purple-600 rounded-xl hover:bg-purple-500 transition-colors disabled:opacity-50"
+                      >
+                        <Send className="w-5 h-5" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
           </div>
 
           {/* Control Bar */}
-          <div className="bg-zinc-900 border-t border-zinc-800 p-4">
-            <div className="max-w-3xl mx-auto">
+          <div className="bg-zinc-900 border-t border-zinc-800 p-4 safe-area-pb">
+            <div className="max-w-lg mx-auto">
+              {/* Instructions */}
+              <p className="text-center text-sm text-zinc-400 mb-4">
+                {isThinking ? "AI is thinking..." : 
+                 isSpeaking ? "AI is speaking... Tap mic to interrupt" :
+                 isRecording ? "Listening... Tap STOP when done" :
+                 speechSupported ? "Tap the microphone to speak, or use chat" :
+                 "Use the chat button to type your message"}
+              </p>
+
               <div className="flex items-center justify-center gap-4">
                 {/* Camera Toggle */}
                 <button
                   onClick={toggleCamera}
                   className={`p-4 rounded-full transition-all ${
                     cameraEnabled 
-                      ? "bg-zinc-800 text-white hover:bg-zinc-700" 
-                      : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                      ? "bg-zinc-700 hover:bg-zinc-600" 
+                      : "bg-zinc-800 hover:bg-zinc-700"
                   }`}
                 >
-                  {cameraEnabled ? <Camera className="w-6 h-6" /> : <CameraOff className="w-6 h-6" />}
+                  {cameraEnabled ? (
+                    <Camera className="w-6 h-6" />
+                  ) : (
+                    <CameraOff className="w-6 h-6 text-zinc-500" />
+                  )}
                 </button>
 
-                {/* Tap to Speak Button */}
-                <button
-                  onClick={toggleRecording}
-                  disabled={isThinking}
-                  className={`relative w-20 h-20 rounded-full transition-all duration-200 ${
-                    isRecording 
-                      ? "bg-red-500 scale-110 shadow-lg shadow-red-500/50" 
-                      : "bg-teal-500 hover:bg-teal-400 hover:scale-105"
-                  } ${isThinking ? "opacity-50 cursor-not-allowed" : ""}`}
-                >
-                  {isRecording && (
-                    <>
-                      <div className="absolute inset-0 rounded-full bg-red-500 animate-ping opacity-30" />
-                      <div className="absolute inset-[-8px] rounded-full border-4 border-red-500/30 animate-pulse" />
-                    </>
-                  )}
-                  <div className="relative flex flex-col items-center justify-center text-white">
+                {/* Main Mic/Speak Button */}
+                {speechSupported ? (
+                  <button
+                    onClick={toggleRecording}
+                    disabled={isThinking}
+                    className={`relative p-6 rounded-full transition-all ${
+                      isRecording
+                        ? "bg-red-600 hover:bg-red-500 scale-110"
+                        : isThinking
+                        ? "bg-purple-600 opacity-50 cursor-not-allowed"
+                        : "bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500"
+                    }`}
+                  >
                     {isRecording ? (
                       <>
-                        <StopCircle className="w-7 h-7" />
-                        <span className="text-[10px] mt-1 font-bold">STOP</span>
+                        <StopCircle className="w-8 h-8" />
+                        <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-400 rounded-full animate-ping" />
                       </>
                     ) : isThinking ? (
-                      <>
-                        <Loader2 className="w-7 h-7 animate-spin" />
-                        <span className="text-[10px] mt-1 font-bold">WAIT</span>
-                      </>
+                      <Loader2 className="w-8 h-8 animate-spin" />
                     ) : (
-                      <>
-                        <Mic className="w-7 h-7" />
-                        <span className="text-[10px] mt-1 font-bold">SPEAK</span>
-                      </>
+                      <Mic className="w-8 h-8" />
                     )}
-                  </div>
-                </button>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowChat(true)}
+                    className="p-6 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 transition-all"
+                  >
+                    <Keyboard className="w-8 h-8" />
+                  </button>
+                )}
 
                 {/* Voice Toggle */}
                 <button
@@ -836,11 +1033,15 @@ export default function TherapyPage() {
                   }}
                   className={`p-4 rounded-full transition-all ${
                     voiceEnabled 
-                      ? "bg-zinc-800 text-white hover:bg-zinc-700" 
-                      : "bg-red-500/20 text-red-400 hover:bg-red-500/30"
+                      ? "bg-zinc-700 hover:bg-zinc-600" 
+                      : "bg-zinc-800 hover:bg-zinc-700"
                   }`}
                 >
-                  {voiceEnabled ? <Volume2 className="w-6 h-6" /> : <VolumeX className="w-6 h-6" />}
+                  {voiceEnabled ? (
+                    <Volume2 className="w-6 h-6" />
+                  ) : (
+                    <VolumeX className="w-6 h-6 text-zinc-500" />
+                  )}
                 </button>
 
                 {/* Chat Toggle */}
@@ -848,137 +1049,69 @@ export default function TherapyPage() {
                   onClick={() => setShowChat(!showChat)}
                   className={`p-4 rounded-full transition-all ${
                     showChat 
-                      ? "bg-purple-600 text-white" 
-                      : "bg-zinc-800 text-white hover:bg-zinc-700"
+                      ? "bg-purple-600 hover:bg-purple-500" 
+                      : "bg-zinc-700 hover:bg-zinc-600"
                   }`}
                 >
                   <MessageCircle className="w-6 h-6" />
                 </button>
               </div>
-
-              {/* Instructions */}
-              <p className="text-center text-sm text-zinc-400 mt-4">
-                {isRecording 
-                  ? "Listening... Tap the button again when done speaking" 
-                  : isThinking 
-                    ? "AI is thinking..." 
-                    : isSpeaking 
-                      ? "AI is speaking..." 
-                      : "Tap the microphone to start speaking"
-                }
-              </p>
             </div>
           </div>
-
-          {/* Chat Panel */}
-          {showChat && (
-            <div className="absolute bottom-28 left-4 right-4 md:left-auto md:right-4 md:w-96 z-30">
-              <div className="bg-zinc-900/95 backdrop-blur-md rounded-2xl border border-zinc-700 shadow-2xl overflow-hidden max-h-[50vh] flex flex-col">
-                <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-                  <h3 className="font-semibold">Chat History</h3>
-                  <button onClick={() => setShowChat(false)} className="text-zinc-400 hover:text-white">
-                    <ChevronDown className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 max-h-[35vh]">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
-                    >
-                      <div className={`max-w-[85%] rounded-2xl px-4 py-3 ${
-                        message.role === "user"
-                          ? "bg-teal-600 text-white"
-                          : "bg-zinc-800 text-zinc-100"
-                      }`}>
-                        <p className="text-sm leading-relaxed">{message.content}</p>
-                      </div>
-                    </div>
-                  ))}
-                  {isThinking && (
-                    <div className="flex justify-start">
-                      <div className="bg-zinc-800 rounded-2xl px-4 py-3">
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" />
-                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.1s" }} />
-                          <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{ animationDelay: "0.2s" }} />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Text Input */}
-                <div className="p-4 border-t border-zinc-800">
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={inputText}
-                      onChange={(e) => setInputText(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && handleSend()}
-                      placeholder="Type a message..."
-                      className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm focus:outline-none focus:border-purple-500"
-                    />
-                    <button
-                      onClick={handleSend}
-                      disabled={!inputText.trim() || isThinking}
-                      className="p-2 bg-purple-600 rounded-xl hover:bg-purple-500 transition-colors disabled:opacity-50"
-                    >
-                      <Send className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
       )}
 
       {/* Session Ended */}
       {sessionState === "ended" && (
-        <div className="min-h-screen flex items-center justify-center p-6">
-          <div className="max-w-md mx-auto text-center">
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-6">
-              <Heart className="w-10 h-10 text-white" />
+        <div className="min-h-screen flex flex-col">
+          <header className="p-4 border-b border-zinc-800">
+            <div className="max-w-6xl mx-auto flex items-center justify-center">
+              <h1 className="text-lg font-bold">Session Complete</h1>
             </div>
+          </header>
 
-            <h2 className="text-3xl font-bold mb-4">Session Complete</h2>
-            <p className="text-zinc-400 mb-8">
-              Thank you for sharing this time with me. Remember, taking care of your mental health is an act of courage.
-            </p>
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="max-w-md mx-auto text-center">
+              <div className="w-20 h-20 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center mx-auto mb-6">
+                <Heart className="w-10 h-10 text-white" />
+              </div>
+              
+              <h2 className="text-3xl font-bold mb-4">Thank You</h2>
+              <p className="text-zinc-400 mb-8">
+                I hope our conversation was helpful. Remember, taking time for your mental health is an act of self-care and strength.
+              </p>
 
-            <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 mb-8">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-2xl font-bold text-purple-400">{formatDuration(sessionDuration)}</p>
-                  <p className="text-sm text-zinc-500">Duration</p>
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-pink-400">{messages.length}</p>
-                  <p className="text-sm text-zinc-500">Messages</p>
+              <div className="bg-zinc-900 rounded-2xl p-6 border border-zinc-800 mb-8">
+                <div className="grid grid-cols-2 gap-6">
+                  <div>
+                    <p className="text-sm text-zinc-500 mb-1">Duration</p>
+                    <p className="text-2xl font-bold">{formatDuration(sessionDuration)}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-zinc-500 mb-1">Messages</p>
+                    <p className="text-2xl font-bold">{messages.length}</p>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setSessionState("settings")
-                  setMessages([])
-                  setSessionDuration(0)
-                }}
-                className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold hover:from-purple-500 hover:to-pink-500 transition-all"
-              >
-                Start New Session
-              </button>
-              <Link
-                href="/"
-                className="block w-full py-4 bg-zinc-800 rounded-xl font-bold hover:bg-zinc-700 transition-colors text-center"
-              >
-                Return Home
-              </Link>
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setSessionState("settings")
+                    setMessages([])
+                    setSessionDuration(0)
+                  }}
+                  className="w-full py-4 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl font-bold hover:from-purple-500 hover:to-pink-500 transition-all"
+                >
+                  Start New Session
+                </button>
+                <Link
+                  href="/dashboard"
+                  className="block w-full py-4 bg-zinc-800 rounded-xl font-bold hover:bg-zinc-700 transition-colors"
+                >
+                  Return to Dashboard
+                </Link>
+              </div>
             </div>
           </div>
         </div>
