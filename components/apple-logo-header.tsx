@@ -38,17 +38,17 @@ export function AppleLogoHeader() {
 
   return (
     <div
-      className={`fixed top-6 left-6 z-50 flex items-center gap-3 transition-all duration-700 ${
+      className={`fixed top-14 left-6 z-50 flex items-center gap-3 transition-all duration-700 ${
         mounted ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-5"
       }`}
     >
-      {/* Apple Logo */}
-      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg">
-        <Apple className="w-7 h-7 text-white fill-current" />
+      {/* Logo */}
+      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg">
+        <Apple className="w-6 h-6 text-white fill-current" />
       </div>
 
       {/* Typewriter Text */}
-      <div className="font-bold text-2xl text-white">
+      <div className="font-bold text-xl text-white">
         {text}
         <span className="animate-pulse">|</span>
       </div>

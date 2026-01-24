@@ -3,17 +3,12 @@
 import type React from "react"
 import { useState, useRef, useEffect, useCallback } from "react"
 import Link from "next/link"
-import { AI_SYSTEM_PROMPT } from "@/lib/constants"
+import { useChat } from "@ai-sdk/react"
+import { DefaultChatTransport } from "ai"
 import { Send, AlertCircle, ArrowLeft, Loader2, Copy, Check, User, Sparkles } from "lucide-react"
 import { VoiceInput } from "@/components/voice-input"
 import ReactMarkdown from "react-markdown"
 import remarkGfm from "remark-gfm"
-
-interface Message {
-  id: string
-  role: "user" | "assistant" | "system"
-  content: string
-}
 
 // Code block component with copy button
 function CodeBlock({ children, className }: { children: string; className?: string }) {
@@ -45,39 +40,99 @@ function CodeBlock({ children, className }: { children: string; className?: stri
   )
 }
 
-// Markdown renderer component
+// YouTube video embed component
+function YouTubeEmbed({ url }: { url: string }) {
+  const getVideoId = (url: string): string | null => {
+    const patterns = [
+      /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\s?]+)/,
+      /youtube\.com\/shorts\/([^&\s?]+)/,
+    ]
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match) return match[1]
+    }
+    return null
+  }
+
+  const videoId = getVideoId(url)
+  if (!videoId) return null
+
+  return (
+    <div className="my-4 rounded-xl overflow-hidden border border-zinc-700">
+      <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+        <iframe
+          src={`https://www.youtube.com/embed/${videoId}`}
+          title="YouTube video"
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          className="absolute top-0 left-0 w-full h-full"
+        />
+      </div>
+    </div>
+  )
+}
+
+function isYouTubeUrl(url: string): boolean {
+  return /(?:youtube\.com|youtu\.be)/.test(url)
+}
+
+// Helper to extract text from UIMessage parts
+function getMessageText(message: { parts?: Array<{ type: string; text?: string }> }): string {
+  if (!message.parts || !Array.isArray(message.parts)) return ""
+  return message.parts
+    .filter((p): p is { type: "text"; text: string } => p.type === "text" && typeof p.text === "string")
+    .map((p) => p.text)
+    .join("")
+}
+
+// Markdown renderer component with YouTube support
 function MarkdownContent({ content }: { content: string }) {
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
       components={{
-        // Headings
-        h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-4">{children}</h1>,
-        h2: ({ children }) => <h2 className="text-xl font-bold mt-5 mb-3">{children}</h2>,
-        h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2">{children}</h3>,
-        
-        // Paragraphs
+        h1: ({ children }) => <h1 className="text-2xl font-bold mt-6 mb-4 text-white">{children}</h1>,
+        h2: ({ children }) => <h2 className="text-xl font-bold mt-5 mb-3 text-white">{children}</h2>,
+        h3: ({ children }) => <h3 className="text-lg font-semibold mt-4 mb-2 text-white">{children}</h3>,
+        h4: ({ children }) => <h4 className="text-base font-semibold mt-3 mb-2 text-white">{children}</h4>,
         p: ({ children }) => <p className="mb-4 leading-7 last:mb-0">{children}</p>,
-        
-        // Lists
         ul: ({ children }) => <ul className="mb-4 ml-6 list-disc space-y-2">{children}</ul>,
         ol: ({ children }) => <ol className="mb-4 ml-6 list-decimal space-y-2">{children}</ol>,
         li: ({ children }) => <li className="leading-7">{children}</li>,
-        
-        // Links - clickable
-        a: ({ href, children }) => (
-          <a
-            href={href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-purple-400 hover:text-purple-300 underline underline-offset-2"
-          >
-            {children}
-          </a>
-        ),
-        
-        // Code blocks
-        code: ({ className, children, ...props }) => {
+        a: ({ href, children }) => {
+          if (href && isYouTubeUrl(href)) {
+            return (
+              <span className="block">
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-purple-400 hover:text-purple-300 underline underline-offset-2 inline-flex items-center gap-1"
+                >
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                  {children}
+                </a>
+                <YouTubeEmbed url={href} />
+              </span>
+            )
+          }
+          return (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-purple-400 hover:text-purple-300 underline underline-offset-2 inline-flex items-center gap-1"
+            >
+              {children}
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+              </svg>
+            </a>
+          )
+        },
+        code: ({ className, children }) => {
           const isInline = !className
           if (isInline) {
             return (
@@ -89,22 +144,14 @@ function MarkdownContent({ content }: { content: string }) {
           return <CodeBlock className={className}>{String(children).replace(/\n$/, "")}</CodeBlock>
         },
         pre: ({ children }) => <>{children}</>,
-        
-        // Blockquotes
         blockquote: ({ children }) => (
-          <blockquote className="border-l-4 border-purple-500 pl-4 my-4 italic text-zinc-300">
+          <blockquote className="border-l-4 border-purple-500 pl-4 my-4 italic text-zinc-300 bg-zinc-800/30 py-2 rounded-r-lg">
             {children}
           </blockquote>
         ),
-        
-        // Strong and emphasis
-        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+        strong: ({ children }) => <strong className="font-semibold text-white">{children}</strong>,
         em: ({ children }) => <em className="italic">{children}</em>,
-        
-        // Horizontal rule
         hr: () => <hr className="my-6 border-zinc-700" />,
-        
-        // Tables
         table: ({ children }) => (
           <div className="overflow-x-auto my-4">
             <table className="min-w-full border border-zinc-700 rounded-lg">{children}</table>
@@ -122,12 +169,15 @@ function MarkdownContent({ content }: { content: string }) {
 
 export default function ChatPage() {
   const [showDisclaimer, setShowDisclaimer] = useState(true)
-  const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+
+  const { messages, sendMessage, status, error } = useChat({
+    transport: new DefaultChatTransport({ api: "/api/gemini-chat" }),
+  })
+
+  const isLoading = status === "streaming" || status === "submitted"
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
@@ -137,7 +187,6 @@ export default function ChatPage() {
     scrollToBottom()
   }, [messages, scrollToBottom])
 
-  // Auto-resize textarea
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto"
@@ -172,91 +221,14 @@ export default function ChatPage() {
     e.preventDefault()
     if (!input.trim() || isLoading) return
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input.trim(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
+    const messageText = input.trim()
     setInput("")
-    setIsLoading(true)
-    setError(null)
 
-    // Reset textarea height
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto"
     }
 
-    try {
-      const response = await fetch("/api/gemini-chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          messages: [
-            { role: "system", content: AI_SYSTEM_PROMPT },
-            ...messages.map((m) => ({ role: m.role, content: m.content })),
-            { role: "user", content: userMessage.content },
-          ],
-        }),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to get response")
-      }
-
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder()
-      let assistantMessage = ""
-
-      if (reader) {
-        const assistantMessageId = (Date.now() + 1).toString()
-
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
-
-          const chunk = decoder.decode(value)
-          const lines = chunk.split("\n")
-
-          for (const line of lines) {
-            if (line.startsWith("0:")) {
-              try {
-                const jsonStr = line.substring(2).trim()
-                if (jsonStr) {
-                  const parsed = JSON.parse(jsonStr)
-                  if (parsed && typeof parsed === "string") {
-                    assistantMessage += parsed
-                  }
-                }
-              } catch {
-                // Skip invalid JSON lines
-              }
-            }
-          }
-
-          // Update assistant message in real-time (streaming effect)
-          setMessages((prev) => {
-            const filtered = prev.filter((m) => m.id !== assistantMessageId)
-            return [
-              ...filtered,
-              {
-                id: assistantMessageId,
-                role: "assistant" as const,
-                content: assistantMessage,
-              },
-            ]
-          })
-        }
-      }
-    } catch (err) {
-      console.error("[v0] Chat error:", err)
-      setError("Unable to connect to chat service. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
+    sendMessage({ text: messageText })
   }
 
   if (showDisclaimer) {
@@ -299,12 +271,10 @@ export default function ChatPage() {
     )
   }
 
-  // Filter out system messages for display
   const displayMessages = messages.filter((msg) => msg.role !== "system")
 
   return (
     <div className="min-h-screen bg-zinc-950 flex flex-col">
-      {/* Header - minimal like ChatGPT */}
       <header className="border-b border-zinc-800 bg-zinc-950/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between">
           <Link href="/dashboard" className="flex items-center gap-2 text-zinc-400 hover:text-white transition-colors">
@@ -315,15 +285,13 @@ export default function ChatPage() {
             <Sparkles className="w-5 h-5 text-purple-400" />
             <span className="font-semibold text-white">HopeLine AI</span>
           </div>
-          <div className="w-16" /> {/* Spacer for centering */}
+          <div className="w-16" />
         </div>
       </header>
 
-      {/* Chat Area */}
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-3xl mx-auto">
           {displayMessages.length === 0 ? (
-            /* Welcome Screen */
             <div className="flex flex-col items-center justify-center min-h-[60vh] px-4 py-12">
               <div className="w-16 h-16 rounded-full bg-purple-600/20 flex items-center justify-center mb-6">
                 <Sparkles className="w-8 h-8 text-purple-400" />
@@ -333,7 +301,6 @@ export default function ChatPage() {
                 You're in a safe space. Share what you're going through, and I'll listen without judgment.
               </p>
               
-              {/* Quick Reply Suggestions */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full max-w-lg">
                 {quickReplies.map((reply, idx) => (
                   <button
@@ -347,46 +314,46 @@ export default function ChatPage() {
               </div>
             </div>
           ) : (
-            /* Messages */
             <div className="py-4">
-              {displayMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`px-4 py-6 ${msg.role === "assistant" ? "bg-zinc-900/50" : ""}`}
-                >
-                  <div className="max-w-3xl mx-auto flex gap-4">
-                    {/* Avatar */}
-                    <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${
-                      msg.role === "user" 
-                        ? "bg-purple-600" 
-                        : "bg-gradient-to-br from-purple-500 to-pink-500"
-                    }`}>
-                      {msg.role === "user" ? (
-                        <User className="w-4 h-4 text-white" />
-                      ) : (
-                        <Sparkles className="w-4 h-4 text-white" />
-                      )}
-                    </div>
-                    
-                    {/* Message Content */}
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-zinc-400 mb-1">
-                        {msg.role === "user" ? "You" : "HopeLine AI"}
-                      </p>
-                      <div className="text-zinc-100 prose prose-invert max-w-none">
-                        {msg.role === "assistant" ? (
-                          <MarkdownContent content={msg.content} />
+              {displayMessages.map((msg) => {
+                const messageContent = getMessageText(msg)
+                
+                return (
+                  <div
+                    key={msg.id}
+                    className={`px-4 py-6 ${msg.role === "assistant" ? "bg-zinc-900/50" : ""}`}
+                  >
+                    <div className="max-w-3xl mx-auto flex gap-4">
+                      <div className={`w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center ${
+                        msg.role === "user" 
+                          ? "bg-purple-600" 
+                          : "bg-gradient-to-br from-purple-500 to-pink-500"
+                      }`}>
+                        {msg.role === "user" ? (
+                          <User className="w-4 h-4 text-white" />
                         ) : (
-                          <p className="whitespace-pre-wrap leading-7">{msg.content}</p>
+                          <Sparkles className="w-4 h-4 text-white" />
                         )}
+                      </div>
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-zinc-400 mb-1">
+                          {msg.role === "user" ? "You" : "HopeLine AI"}
+                        </p>
+                        <div className="text-zinc-100 prose prose-invert max-w-none">
+                          {msg.role === "assistant" ? (
+                            <MarkdownContent content={messageContent} />
+                          ) : (
+                            <p className="whitespace-pre-wrap leading-7">{messageContent}</p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
 
-              {/* Loading indicator */}
-              {isLoading && !messages.find(m => m.role === "assistant" && m.content === "") && (
+              {isLoading && (
                 <div className="px-4 py-6 bg-zinc-900/50">
                   <div className="max-w-3xl mx-auto flex gap-4">
                     <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
@@ -400,13 +367,12 @@ export default function ChatPage() {
                 </div>
               )}
 
-              {/* Error message */}
               {error && (
                 <div className="px-4 py-4">
                   <div className="max-w-3xl mx-auto">
                     <div className="bg-red-500/10 border border-red-500/20 rounded-xl p-4">
                       <p className="text-sm text-red-400 font-semibold mb-1">Connection Error</p>
-                      <p className="text-xs text-zinc-400">{error}</p>
+                      <p className="text-xs text-zinc-400">{error.message}</p>
                     </div>
                   </div>
                 </div>
@@ -418,7 +384,6 @@ export default function ChatPage() {
         </div>
       </main>
 
-      {/* Input Area - Fixed at bottom like ChatGPT */}
       <div className="sticky bottom-0 bg-gradient-to-t from-zinc-950 via-zinc-950 to-transparent pt-6 pb-4">
         <div className="max-w-3xl mx-auto px-4">
           <form onSubmit={handleSubmit} className="relative">
@@ -448,12 +413,9 @@ export default function ChatPage() {
               </div>
             </div>
           </form>
-          
-          <p className="text-xs text-zinc-600 text-center mt-3">
-            HopeLine AI provides support but is not a replacement for professional help. 
-            <Link href="/crisis" className="text-zinc-500 hover:text-zinc-400 ml-1 underline">
-              Crisis resources
-            </Link>
+
+          <p className="text-center text-xs text-zinc-500 mt-3">
+            HopeLine AI provides support but is not a replacement for professional help.
           </p>
         </div>
       </div>

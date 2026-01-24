@@ -16,11 +16,15 @@ import {
   MoreVertical,
   Heart,
   Phone,
+  Activity,
+  Video,
 } from "lucide-react"
 
 const PRIMARY_NAV_ITEMS = [
   { href: "/", label: "Home", icon: Home },
   { href: "/chat", label: "Chat", icon: MessageCircle },
+  { href: "/therapy", label: "Therapy", icon: Video },
+  { href: "/angle", label: "Angle", icon: Activity },
   { href: "/breathing", label: "Breathe", icon: Wind },
   { href: "/crisis", label: "Crisis", icon: AlertCircle },
 ]

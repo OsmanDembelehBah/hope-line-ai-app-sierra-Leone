@@ -2,6 +2,8 @@ import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
 import { FloatingAssistantWrapper } from "./floating-assistant-wrapper"
+import { Analytics } from "@vercel/analytics/react"
+import { SpeedInsights } from "@vercel/speed-insights/next"
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://v0-hope-line-ai-app.vercel.app"),
@@ -72,6 +74,8 @@ export default function RootLayout({
       <body className="antialiased">
         {children}
         <FloatingAssistantWrapper />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   )

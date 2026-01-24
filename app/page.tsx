@@ -8,15 +8,21 @@ import {
   MessageCircle,
   Music,
   Brain,
+  Star,
+  X,
 } from "lucide-react"
 import { Footer } from "@/components/footer"
 import { AppleLogoHeader } from "@/components/apple-logo-header"
 import { HeroSection } from "@/components/hero-section"
 import { ScrollAnimate } from "@/components/scroll-animate"
+import { AnnouncementBanner } from "@/components/announcement-banner"
 
 export default function HomePage() {
   return (
     <div className="bg-black min-h-screen">
+      {/* HopeLine Angels Announcement Banner */}
+      <AnnouncementBanner />
+      
       <AppleLogoHeader />
       <HeroSection />
 

@@ -1,5 +1,7 @@
 "use client"
 
+import React from "react"
+
 import { useState, useEffect } from "react"
 import { createClient } from "@/lib/supabase/client"
 import Link from "next/link"
@@ -27,7 +29,18 @@ import {
   Calendar,
   FileText,
   Shield,
+  Lock,
+  ImageIcon,
+  Upload,
+  Video,
+  Youtube,
+  Activity,
+  Heart,
+  Brain,
+  ExternalLink,
 } from "lucide-react"
+
+const ADMIN_PASSWORD = "Numa8375#$"
 
 interface SupportMessage {
   id: string
@@ -45,12 +58,17 @@ interface NewsPost {
   title: string
   content: string
   category: string
-  published: boolean
+  is_published: boolean
   created_at: string
   author_name: string
+  image_url?: string
+  video_url?: string
 }
 
 export default function AdminDashboard() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [password, setPassword] = useState("")
+  const [loginError, setLoginError] = useState("")
   const [activeTab, setActiveTab] = useState<"overview" | "messages" | "news" | "users">("overview")
   const [messages, setMessages] = useState<SupportMessage[]>([])
   const [news, setNews] = useState<NewsPost[]>([])
@@ -58,7 +76,10 @@ export default function AdminDashboard() {
   const [selectedMessage, setSelectedMessage] = useState<SupportMessage | null>(null)
   const [adminResponse, setAdminResponse] = useState("")
   const [showNewPostForm, setShowNewPostForm] = useState(false)
-  const [newPost, setNewPost] = useState({ title: "", content: "", category: "update" })
+  const [newPost, setNewPost] = useState({ title: "", content: "", category: "update", image_url: "", video_url: "" })
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [uploadingImage, setUploadingImage] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [stats, setStats] = useState({
     totalMessages: 0,
@@ -69,8 +90,89 @@ export default function AdminDashboard() {
   })
 
   useEffect(() => {
-    loadData()
+    // Check if already logged in (session storage)
+    const savedAuth = sessionStorage.getItem("hopeline_admin_auth")
+    if (savedAuth === "true") {
+      setIsAuthenticated(true)
+    }
   }, [])
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadData()
+    }
+  }, [isAuthenticated])
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (password === ADMIN_PASSWORD) {
+      setIsAuthenticated(true)
+      sessionStorage.setItem("hopeline_admin_auth", "true")
+      setLoginError("")
+    } else {
+      setLoginError("Incorrect password. Please try again.")
+    }
+  }
+
+  const handleLogout = () => {
+    setIsAuthenticated(false)
+    sessionStorage.removeItem("hopeline_admin_auth")
+  }
+
+  // Login Screen
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center p-6">
+        <div className="w-full max-w-md">
+          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-8">
+            <div className="text-center mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center mx-auto mb-4">
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-2xl font-bold text-white mb-2">Admin Access</h1>
+              <p className="text-zinc-400">Enter password to access the dashboard</p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-sm text-zinc-400 mb-2">Password</label>
+                <div className="relative">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 rounded-xl bg-zinc-800 border border-zinc-700 text-white focus:border-purple-500 focus:outline-none"
+                    placeholder="Enter admin password"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              {loginError && (
+                <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+                  {loginError}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-3 rounded-xl bg-purple-600 text-white font-medium hover:bg-purple-700 transition-colors"
+              >
+                Access Dashboard
+              </button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <Link href="/" className="text-sm text-zinc-500 hover:text-zinc-300 transition-colors">
+                Back to HopeLine
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   async function loadData() {
     setLoading(true)
@@ -136,23 +238,76 @@ export default function AdminDashboard() {
     await loadData()
   }
 
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (file) {
+      setImageFile(file)
+      const reader = new FileReader()
+      reader.onloadend = () => {
+        setImagePreview(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  async function uploadImage(): Promise<string | null> {
+    if (!imageFile) return null
+    
+    setUploadingImage(true)
+    const supabase = createClient()
+    
+    const fileExt = imageFile.name.split('.').pop()
+    const fileName = `news-${Date.now()}.${fileExt}`
+    
+    const { data, error } = await supabase.storage
+      .from('news-images')
+      .upload(fileName, imageFile)
+    
+    setUploadingImage(false)
+    
+    if (error) {
+      // If bucket doesn't exist, use base64 data URL as fallback
+      console.log("[v0] Storage upload error, using preview URL:", error)
+      return imagePreview
+    }
+    
+    const { data: urlData } = supabase.storage
+      .from('news-images')
+      .getPublicUrl(fileName)
+    
+    return urlData.publicUrl
+  }
+
   async function createNewsPost() {
     if (!newPost.title || !newPost.content) return
 
     setIsSubmitting(true)
     const supabase = createClient()
 
-    await supabase.from("news_posts").insert({
+    let imageUrl = null
+    if (imageFile) {
+      imageUrl = await uploadImage()
+    }
+
+    const { error } = await supabase.from("news_posts").insert({
       title: newPost.title,
       content: newPost.content,
       category: newPost.category,
-      author_name: "Admin",
-      published: true,
+      author_name: "HopeLine Admin",
+      is_published: true,
+      image_url: imageUrl,
+      video_url: newPost.video_url || null,
     })
 
-    setNewPost({ title: "", content: "", category: "update" })
-    setShowNewPostForm(false)
-    await loadData()
+    if (error) {
+      alert("Error creating post: " + error.message)
+    } else {
+      setNewPost({ title: "", content: "", category: "update", image_url: "", video_url: "" })
+      setImageFile(null)
+      setImagePreview(null)
+      setShowNewPostForm(false)
+      await loadData()
+    }
     setIsSubmitting(false)
   }
 
@@ -162,9 +317,9 @@ export default function AdminDashboard() {
     await loadData()
   }
 
-  async function toggleNewsPublished(id: string, published: boolean) {
+  async function toggleNewsPublished(id: string, isPublished: boolean) {
     const supabase = createClient()
-    await supabase.from("news_posts").update({ published: !published }).eq("id", id)
+    await supabase.from("news_posts").update({ is_published: !isPublished }).eq("id", id)
     await loadData()
   }
 
@@ -222,6 +377,13 @@ export default function AdminDashboard() {
                 </span>
               )}
             </div>
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span className="text-sm font-medium">Logout</span>
+            </button>
           </div>
         </div>
       </header>
@@ -273,6 +435,63 @@ export default function AdminDashboard() {
                   <p className="text-sm text-zinc-500">{stat.label}</p>
                 </div>
               ))}
+            </div>
+
+            {/* New Features Section */}
+            <div className="grid md:grid-cols-2 gap-6">
+              {/* HopeLine Therapy Card */}
+              <div className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 rounded-2xl p-6 border border-purple-500/20">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                    <Brain className="w-7 h-7 text-white" />
+                  </div>
+                  <span className="px-3 py-1 bg-purple-500/20 text-purple-300 text-xs font-semibold rounded-full">NEW FEATURE</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">HopeLine Therapy</h3>
+                <p className="text-zinc-400 text-sm mb-4">
+                  Live AI video therapy sessions with face-to-face support. Users can see themselves and talk to the AI therapist in real-time.
+                </p>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/therapy"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-500 transition-colors text-sm font-medium"
+                  >
+                    <Video className="w-4 h-4" />
+                    Open Therapy
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                </div>
+              </div>
+
+              {/* HopeLine Angle Card */}
+              <div className="bg-gradient-to-br from-teal-900/50 to-cyan-900/50 rounded-2xl p-6 border border-teal-500/20">
+                <div className="flex items-start justify-between mb-4">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center">
+                    <Activity className="w-7 h-7 text-white" />
+                  </div>
+                  <span className="px-3 py-1 bg-teal-500/20 text-teal-300 text-xs font-semibold rounded-full">NEW FEATURE</span>
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">HopeLine Angle</h3>
+                <p className="text-zinc-400 text-sm mb-4">
+                  AI-powered movement analysis with 15+ exercises. Webcam-based pose estimation for physical health and rehabilitation.
+                </p>
+                <div className="flex items-center gap-3">
+                  <Link
+                    href="/angle"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-teal-600 text-white rounded-lg hover:bg-teal-500 transition-colors text-sm font-medium"
+                  >
+                    <Activity className="w-4 h-4" />
+                    Open Angle
+                    <ExternalLink className="w-3 h-3" />
+                  </Link>
+                  <Link
+                    href="/angle/session"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-zinc-800 text-zinc-300 rounded-lg hover:bg-zinc-700 transition-colors text-sm"
+                  >
+                    Start Session
+                  </Link>
+                </div>
+              </div>
             </div>
 
             {/* Recent Activity */}
@@ -469,6 +688,58 @@ export default function AdminDashboard() {
                       placeholder="Write your post content..."
                     />
                   </div>
+                  
+                  {/* Image Upload */}
+                  <div>
+                    <label className="block text-sm text-zinc-400 mb-2">
+                      <ImageIcon className="w-4 h-4 inline mr-2" />
+                      Attach Image (optional)
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <label className="flex-1 cursor-pointer">
+                        <div className="px-4 py-3 rounded-xl bg-zinc-800 border border-zinc-700 border-dashed text-zinc-400 hover:border-purple-500 hover:text-purple-400 transition-colors flex items-center justify-center gap-2">
+                          <Upload className="w-5 h-5" />
+                          {imageFile ? imageFile.name : "Choose image file..."}
+                        </div>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleImageSelect}
+                          className="hidden"
+                        />
+                      </label>
+                      {imagePreview && (
+                        <button
+                          onClick={() => { setImageFile(null); setImagePreview(null); }}
+                          className="p-2 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600 hover:text-white"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      )}
+                    </div>
+                    {imagePreview && (
+                      <div className="mt-3 rounded-xl overflow-hidden border border-zinc-700">
+                        <img src={imagePreview || "/placeholder.svg"} alt="Preview" className="w-full h-48 object-cover" />
+                      </div>
+                    )}
+                  </div>
+
+                  {/* YouTube Video Link */}
+                  <div>
+                    <label className="block text-sm text-zinc-400 mb-2">
+                      <Youtube className="w-4 h-4 inline mr-2" />
+                      YouTube Video Link (optional)
+                    </label>
+                    <input
+                      type="url"
+                      value={newPost.video_url}
+                      onChange={(e) => setNewPost({ ...newPost, video_url: e.target.value })}
+                      className="w-full px-4 py-3 rounded-xl bg-zinc-800 border border-zinc-700 text-white focus:border-purple-500 focus:outline-none"
+                      placeholder="https://www.youtube.com/watch?v=..."
+                    />
+                    <p className="text-xs text-zinc-500 mt-1">Paste a YouTube video URL to embed in your post</p>
+                  </div>
+
                   <button
                     onClick={createNewsPost}
                     disabled={isSubmitting || !newPost.title || !newPost.content}
@@ -496,8 +767,8 @@ export default function AdminDashboard() {
                           <span className={`px-3 py-1 rounded-full text-xs font-medium ${getCategoryColor(post.category)}`}>
                             {post.category}
                           </span>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${post.published ? "bg-green-500/20 text-green-400" : "bg-zinc-500/20 text-zinc-400"}`}>
-                            {post.published ? "Published" : "Draft"}
+                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${post.is_published ? "bg-green-500/20 text-green-400" : "bg-zinc-500/20 text-zinc-400"}`}>
+                            {post.is_published ? "Published" : "Draft"}
                           </span>
                           <span className="text-xs text-zinc-500">
                             {new Date(post.created_at).toLocaleDateString()}
@@ -508,10 +779,10 @@ export default function AdminDashboard() {
                       </div>
                       <div className="flex gap-2">
                         <button
-                          onClick={() => toggleNewsPublished(post.id, post.published)}
-                          className={`p-2 rounded-lg transition-colors ${post.published ? "bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600 hover:text-white" : "bg-green-600/20 text-green-400 hover:bg-green-600 hover:text-white"}`}
+                          onClick={() => toggleNewsPublished(post.id, post.is_published)}
+                          className={`p-2 rounded-lg transition-colors ${post.is_published ? "bg-yellow-600/20 text-yellow-400 hover:bg-yellow-600 hover:text-white" : "bg-green-600/20 text-green-400 hover:bg-green-600 hover:text-white"}`}
                         >
-                          {post.published ? <Eye className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
+                          {post.is_published ? <Eye className="w-4 h-4" /> : <CheckCircle className="w-4 h-4" />}
                         </button>
                         <button
                           onClick={() => deleteNewsPost(post.id)}
