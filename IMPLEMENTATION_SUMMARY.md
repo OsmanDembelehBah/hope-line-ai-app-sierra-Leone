@@ -188,9 +188,9 @@ All of the following should be replaced with verified, Sierra Leone-specific inf
    - See Vercel dashboard for environment variable configuration
 
 2. **Vercel Deployment**
-   ```bash
+   \`\`\`bash
    vercel deploy
-   ```
+   \`\`\`
 
 3. **Pre-Launch Checklist**
    - [ ] Replace all placeholder phone numbers
@@ -206,7 +206,7 @@ All of the following should be replaced with verified, Sierra Leone-specific inf
 
 ## File Structure
 
-```
+\`\`\`
 app/
 ├── page.tsx (home)
 ├── chat/page.tsx
@@ -250,7 +250,7 @@ api/
 public/
 ├── index.html
 └── (team member images)
-```
+\`\`\`
 
 ## Next Steps & Enhancements
 
