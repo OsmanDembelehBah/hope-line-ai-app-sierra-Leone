@@ -1,9 +1,9 @@
 "use client"
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useRef, useEffect, useCallback } from "react"
 import { NavBar } from "@/components/nav-bar"
 import { Footer } from "@/components/footer"
-import { Mic, StopCircle, Volume2, AlertCircle } from "lucide-react"
+import { Mic, StopCircle, Volume2, AlertCircle, Play } from "lucide-react"
 
 export default function VoiceCallPage() {
   const [isRecording, setIsRecording] = useState(false)
@@ -12,16 +12,57 @@ export default function VoiceCallPage() {
   const [isAISpeaking, setIsAISpeaking] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isBrowserSupported, setIsBrowserSupported] = useState(true)
+  const [isIOS, setIsIOS] = useState(false)
+  const [pendingResponse, setPendingResponse] = useState<string | null>(null)
+  const [voicesLoaded, setVoicesLoaded] = useState(false)
   const recognitionRef = useRef<any>(null)
   const synthRef = useRef<SpeechSynthesis | null>(null)
+  const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
+
+  // Detect iOS
+  useEffect(() => {
+    const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)
+    setIsIOS(iOS)
+  }, [])
 
   useEffect(() => {
     synthRef.current = window.speechSynthesis
+
+    // Load voices - required for iOS
+    const loadVoices = () => {
+      const voices = synthRef.current?.getVoices()
+      if (voices && voices.length > 0) {
+        setVoicesLoaded(true)
+      }
+    }
+
+    // Voices load asynchronously on some browsers
+    loadVoices()
+    if (synthRef.current) {
+      synthRef.current.onvoiceschanged = loadVoices
+    }
 
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition
     if (!SpeechRecognition) {
       setIsBrowserSupported(false)
       setError("Speech Recognition is not supported in your browser. Please use Chrome, Edge, or Safari.")
+    }
+
+    // iOS Safari workaround: keep speech synthesis alive
+    // iOS pauses speech synthesis when not in focus
+    const keepAlive = setInterval(() => {
+      if (synthRef.current && synthRef.current.speaking) {
+        synthRef.current.pause()
+        synthRef.current.resume()
+      }
+    }, 5000)
+
+    return () => {
+      clearInterval(keepAlive)
+      if (synthRef.current) {
+        synthRef.current.onvoiceschanged = null
+      }
     }
   }, [])
 
@@ -97,6 +138,14 @@ export default function VoiceCallPage() {
 
   const handleVoiceInput = async (text: string) => {
     try {
+      // iOS workaround: "warm up" speech synthesis with user gesture
+      // This helps maintain the user gesture chain for auto-play
+      if (isIOS && synthRef.current) {
+        const warmup = new SpeechSynthesisUtterance("")
+        warmup.volume = 0
+        synthRef.current.speak(warmup)
+      }
+
       const response = await fetch("/api/gemini-chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,7 +167,15 @@ export default function VoiceCallPage() {
         }
 
         setAiResponse(aiText)
-        speakResponse(aiText)
+        
+        // On iOS, auto-play may not work - show play button instead
+        if (isIOS) {
+          setPendingResponse(aiText)
+          // Still try to speak, but it may be blocked
+          speakResponse(aiText, false)
+        } else {
+          speakResponse(aiText, true)
+        }
       } else {
         setError("Failed to get AI response. Please try again.")
       }
@@ -128,19 +185,108 @@ export default function VoiceCallPage() {
     }
   }
 
-  const speakResponse = (text: string) => {
-    if (!synthRef.current) return
+  // iOS-compatible speech function
+  const speakResponse = useCallback((text: string, isUserTriggered = false) => {
+    if (!synthRef.current) {
+      console.log("[v0] Speech synthesis not available")
+      return
+    }
 
+    // Cancel any ongoing speech
     synthRef.current.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.rate = 0.9
-    utterance.pitch = 1
-    utterance.volume = 1
 
-    utterance.onstart = () => setIsAISpeaking(true)
-    utterance.onend = () => setIsAISpeaking(false)
+    // For iOS, if not user-triggered, store the response for manual playback
+    if (isIOS && !isUserTriggered) {
+      console.log("[v0] iOS detected, storing response for manual playback")
+      setPendingResponse(text)
+      setIsAISpeaking(false)
+      return
+    }
 
-    synthRef.current.speak(utterance)
+    // Split long text into chunks for iOS (iOS has issues with long utterances)
+    const maxLength = isIOS ? 200 : 500
+    const chunks: string[] = []
+    
+    if (text.length > maxLength) {
+      // Split by sentences first
+      const sentences = text.match(/[^.!?]+[.!?]+/g) || [text]
+      let currentChunk = ""
+      
+      for (const sentence of sentences) {
+        if ((currentChunk + sentence).length > maxLength) {
+          if (currentChunk) chunks.push(currentChunk.trim())
+          currentChunk = sentence
+        } else {
+          currentChunk += sentence
+        }
+      }
+      if (currentChunk) chunks.push(currentChunk.trim())
+    } else {
+      chunks.push(text)
+    }
+
+    // Get available voices and prefer English voice
+    const voices = synthRef.current.getVoices()
+    const englishVoice = voices.find(v => v.lang.startsWith('en') && v.localService) || 
+                         voices.find(v => v.lang.startsWith('en')) ||
+                         voices[0]
+
+    let chunkIndex = 0
+
+    const speakNextChunk = () => {
+      if (chunkIndex >= chunks.length) {
+        setIsAISpeaking(false)
+        setPendingResponse(null)
+        return
+      }
+
+      const utterance = new SpeechSynthesisUtterance(chunks[chunkIndex])
+      utteranceRef.current = utterance
+      
+      utterance.rate = 0.9
+      utterance.pitch = 1
+      utterance.volume = 1
+      
+      if (englishVoice) {
+        utterance.voice = englishVoice
+      }
+
+      utterance.onstart = () => {
+        console.log("[v0] Started speaking chunk", chunkIndex + 1, "of", chunks.length)
+        setIsAISpeaking(true)
+      }
+      
+      utterance.onend = () => {
+        console.log("[v0] Finished speaking chunk", chunkIndex + 1)
+        chunkIndex++
+        speakNextChunk()
+      }
+      
+      utterance.onerror = (event) => {
+        console.log("[v0] Speech error:", event.error)
+        // On iOS, "interrupted" is common and not a real error
+        if (event.error !== 'interrupted') {
+          setError(`Speech error: ${event.error}. Try tapping "Play Response" button.`)
+        }
+        setIsAISpeaking(false)
+      }
+
+      // iOS workaround: small delay before speaking
+      setTimeout(() => {
+        if (synthRef.current) {
+          synthRef.current.speak(utterance)
+        }
+      }, isIOS ? 100 : 0)
+    }
+
+    speakNextChunk()
+  }, [isIOS])
+
+  // Manual play button for iOS
+  const playPendingResponse = () => {
+    if (pendingResponse) {
+      speakResponse(pendingResponse, true)
+    }
   }
 
   const stopSpeaking = () => {
@@ -205,6 +351,16 @@ export default function VoiceCallPage() {
                 </div>
                 <p className="text-lg font-semibold text-foreground">HopeLine is speaking...</p>
               </div>
+            ) : pendingResponse ? (
+              <div className="space-y-3">
+                <div className="flex justify-center">
+                  <div className="w-24 h-24 rounded-full bg-green-500/20 flex items-center justify-center">
+                    <Play className="w-12 h-12 text-green-600" />
+                  </div>
+                </div>
+                <p className="text-lg font-semibold text-foreground">Response Ready</p>
+                <p className="text-sm text-muted-foreground">Tap "Play Response" to hear HopeLine</p>
+              </div>
             ) : (
               <div className="space-y-3">
                 <div className="flex justify-center">
@@ -235,7 +391,7 @@ export default function VoiceCallPage() {
           )}
 
           {/* Controls */}
-          <div className="flex gap-4 justify-center">
+          <div className="flex flex-wrap gap-4 justify-center">
             {!isRecording && !isAISpeaking && (
               <button
                 onClick={startRecording}
@@ -266,7 +422,25 @@ export default function VoiceCallPage() {
                 Stop Speaking
               </button>
             )}
+
+            {/* iOS Play Button - shows when there's a response ready to play */}
+            {pendingResponse && !isAISpeaking && !isRecording && (
+              <button
+                onClick={playPendingResponse}
+                className="bg-green-600 text-white px-6 py-3 rounded-full font-semibold hover:bg-green-700 transition-colors flex items-center gap-2 animate-pulse"
+              >
+                <Play className="w-5 h-5" />
+                Play Response
+              </button>
+            )}
           </div>
+
+          {/* iOS Notice */}
+          {isIOS && pendingResponse && !isAISpeaking && (
+            <p className="text-center text-sm text-amber-600 mt-4">
+              Tap "Play Response" to hear HopeLine's answer (required on iPhone/iPad)
+            </p>
+          )}
         </div>
 
         {/* Instructions */}
@@ -276,6 +450,7 @@ export default function VoiceCallPage() {
             <li>Click "Start Speaking" to activate your microphone</li>
             <li>Speak naturally about what's on your mind</li>
             <li>HopeLine AI will listen and respond with support and resources</li>
+            {isIOS && <li className="text-amber-700 font-medium">On iPhone/iPad: Tap "Play Response" to hear the answer</li>}
             <li>You can continue the conversation by speaking again</li>
             <li>If you need immediate help, click the emergency button anytime</li>
           </ol>
@@ -283,6 +458,12 @@ export default function VoiceCallPage() {
             Note: Voice recognition requires a secure HTTPS connection and works best in Chrome, Edge, or Safari
             browsers.
           </p>
+          {isIOS && (
+            <p className="text-xs text-amber-600 mt-2">
+              iPhone/iPad users: Due to iOS restrictions, you need to tap the "Play Response" button to hear 
+              HopeLine's voice. This is a security feature built into iOS.
+            </p>
+          )}
         </div>
       </main>
 
